@@ -27,8 +27,7 @@ Main.py [-h] [-tree <treefile>] [-alpha <a>] (-m <markerfile> | -a <adjacencies>
   
   *-alpha \<a>*          alpha parameter in objective function, [0,1]
   
-  *-m , --marker \<markerfile>*  
-                        marker order of extant genomes
+  *-m , --marker \<markerfile>*       marker order of extant genomes
                         
   *-a , --adjacencies \<adjacencies>*
                         adjacencies in extant genomes
@@ -91,5 +90,5 @@ Example:
 * *doubled_scaffolds, undoubled_scaffolds* --- contains the set of scaffolds/CARs at each internal node according to the marker order file format described above, either as sequences of marker extremities or signed marker
 
 
-#### References
+
 
