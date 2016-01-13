@@ -50,7 +50,7 @@ Main.py [-h] [-tree <treefile>] [-alpha <a>] (-m <markerfile> | -a <adjacencies>
 
 #### Input files
 ##### Marker orders for extant genomes
-marker + and -
+
 
 Example:
 ```
@@ -63,28 +63,30 @@ Example:
 
 ##### Adjacencies in extant genomes
 
-Doubled marker
-So far, ..., which can be simplified to the following example:
 
+Example:
 ```
 0|1.0000000000005;genome1,genome2,genome3:1 5192  #genome1:start-stop - #genome2:start-stop + #genome3:start-stop - 
 1| ...
 ```
 
 ##### Given adjacency weights for specific internal nodes of the tree
-tab separated, adjacency {extrem1, extrem2}
 
+Example:
 ```
 >extrem1   extrem2    gapID   weight in [0,1]     genome1:start-stop +      genome2:start-stop +  
 ```
 
-### Output
+### Output files
 
 ancestral_assigned_adjacencies_with_weight
+
 conflicts
+
 reconstructed_adjacencies
+
 doubled_scaffolds, undoubled_scaffolds
 
 
 
-### References
+
