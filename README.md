@@ -3,7 +3,7 @@
 PhySca samples solutions to the SCJ small parsimony problem for weighted gene adjacencies.
 
 
-## Requirements
+### Requirements
 
 PhySca is composed of a set of Python scripts. It requires the following to be available:
 
@@ -12,15 +12,15 @@ PhySca is composed of a set of Python scripts. It requires the following to be a
 * software DeClone (https://github.com/yannponty/DeClone)
 
 
-## Usage
-
-Main.py [-h] [-tree \<treefile>] \[-alpha \<a>] (-m \<markerfile> | -a \<adjacencies>)
-               (-x <x> | -w \<weights>) [-gx \<weights>] [-kT \<kT>] [-s \<Z>]
+### Usage
+```
+Main.py [-h] [-tree <treefile>] [-alpha <a>] (-m <markerfile> | -a <adjacencies>)
+               (-x <x> | -w <weights>) [-gx <weights>] [-kT <kT>] [-s <Z>]
                
+```
 
 
-
-  -h, --help              show this help message and exit
+  -h, --help   show this help message and exit
   
   -tree \<treefile>            tree file in newick format, if DeClone is used, the tree has to be specified in Extended Newick 
         (NHX) format
@@ -37,7 +37,7 @@ Main.py [-h] [-tree \<treefile>] \[-alpha \<a>] (-m \<markerfile> | -a \<adjacen
                         
   -w , --weight \<weightfile>
                         weights for adjacencies at specific internal nodes,
-                        adjacencies at other nodes have a weight of 0
+                        adjacencies at other nodes are assigned a weight of 0
                         
   -gx \<weightfile>                weights for adjacencies at specific internal nodes,
                         adjacencies at other nodes have weights computed by
@@ -48,7 +48,43 @@ Main.py [-h] [-tree \<treefile>] \[-alpha \<a>] (-m \<markerfile> | -a \<adjacen
   -s , --sampling <Z>
                         sample Z solutions for given set of parameters
 
-### Specific input file formats
+#### Input files
+##### Marker orders for extant genomes
+marker + and -
+
+Example:
+```
+>genome 1   #marker     #chromosomes
+# chr1
+1 2 3 4 5 6 7 8 $
+# chr2
+10 -11 -14 15 16 $
+```
+
+##### Adjacencies in extant genomes
+
+Doubled marker
+So far, ..., which can be simplified to the following example:
+
+```
+0|1.0000000000005;genome1,genome2,genome3:1 5192  #genome1:start-stop - #genome2:start-stop + #genome3:start-stop - 
+1| ...
+```
+
+##### Given adjacency weights for specific internal nodes of the tree
+tab separated, adjacency {extrem1, extrem2}
+
+```
+>extrem1   extrem2    gapID   weight in [0,1]     genome1:start-stop +      genome2:start-stop +  
+```
+
+### Output
+
+ancestral_assigned_adjacencies_with_weight
+conflicts
+reconstructed_adjacencies
+doubled_scaffolds, undoubled_scaffolds
 
 
-## Output
+
+### References
