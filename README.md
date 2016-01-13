@@ -77,7 +77,7 @@ Example:
 >extrem1   extrem2    gapID   weight in [0,1]     genome1:start-stop +      genome2:start-stop +  
 ```
 
-### Output files
+#### Output files
 
 ancestral_assigned_adjacencies_with_weight
 
