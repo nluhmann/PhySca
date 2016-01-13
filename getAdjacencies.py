@@ -16,6 +16,7 @@ def doubleMarker(marker):
         return (int(marker) * 2) - 1, int(marker) * 2
 
 
+# double marker and find adjacencies in chromosomes
 def findAdjacencies(speciesHash):
     print "collect extant adjacencies from marker file..."
     # keys: (left marker, right marker), value: [(species,chromosome),...]
@@ -41,10 +42,11 @@ def findAdjacencies(speciesHash):
     return adjacencies
 
 
+
+#read FPSAC adjacency file
 def readAdjacencyFile(file):
     print "collect extant adjacencies from provided adjacency file"
     # keys: (left marker, right marker), value: [(species,chromosome),...]
-    # TODO: remove the chromosomes, they are not needed here...
     adjacencies = {}
     f = open(file,"r")
     for line in f:
@@ -61,12 +63,6 @@ def readAdjacencyFile(file):
     return adjacencies
 
 
-
-
-
-
-
-
 def outputAdjacencies(adjacencies):
     adjOut = "extant_adjacencies"
     file = open(adjOut,"w")
@@ -78,6 +74,7 @@ def outputAdjacencies(adjacencies):
         file.write(":"+str(elem[0])+"-"+str(elem[1])+"\n")
         counter = counter + 1
     file.close()
+
 
 def findTreePaths(tree):
     pairs = {}
@@ -97,6 +94,7 @@ def findTreePaths(tree):
             node = node.up
         pairs[pair] = path
     return pairs
+
 
 def assignAncestralAdjacencies(paths, adjacencies, tree):
     #initialize dict for all internal nodes
@@ -141,7 +139,6 @@ def outputAncestralAdjacencies(internal,out):
 #for each extant adjacency, use declone to compute probability that the
 #adjacency is present in an adjacency forest sampled randomly from a
 #Boltzmann distribution. Then assign adjacency if it is above threshold to internal node of the tree.
-#TODO file paths nice
 
 def deCloneProbabilities(extantAdjacencies, threshold, tree, alpha, kT, treefile):
     print "Compute probabilities with DeClone..."
@@ -207,6 +204,7 @@ def outputAncestralAdjacenciesWithProbabilities(adjacenciesPerNode, out):
     file.close()
 
 
+#node='BD'
 def computeWeightProbs(weighting, extantAdjacencies, tree):
     adjacencyProbs = {}
     #read probabilities from file, assume that all assigned adjacencies at this node have a weight in this file
@@ -219,11 +217,14 @@ def computeWeightProbs(weighting, extantAdjacencies, tree):
 
     file = open(weighting,"r")
     for line in file:
-        fields = line.split("\t")
-        left = fields[0][1:]
-        right = fields[1]
-        weight = fields[3]
-        adjacencyProbs['BD'][(left,right)] = float(weight)
+        if line.startswith("#"):
+            n = line.rstrip("\n")[1:]
+        else:
+            fields = line.split("\t")
+            left = fields[0][1:]
+            right = fields[1]
+            weight = fields[3]
+            adjacencyProbs[n][(left,right)] = float(weight)
     file.close()
 
     return adjacencyProbs
@@ -234,36 +235,38 @@ def computeWeightProbs(weighting, extantAdjacencies, tree):
 def assignGAMLweights(weighting, nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode2, threshold):
     #read probabilities from file, assume that all assigned adjacencies at this node have a weight in this file
     file = open(weighting,"r")
-    adjacenciesPerNode2['BD'] = []
+
     threshold = float(threshold)
     for line in file:
-        fields = line.split("\t")
-        left = fields[0][1:]
-        right = fields[1]
-        weight = float(fields[3])
-        adjacency = (left,right)
-        rev = (right,left)
-        nodes = []
-        if adjacency in nodesPerAdjacency2:
-            nodes = nodesPerAdjacency2[adjacency]
-        elif rev in nodesPerAdjacency2:
-            nodes = nodesPerAdjacency2[rev]
-
-        if weight > threshold:
-            adjacencyProbs2['BD'][(left,right)] = weight
-            adjacenciesPerNode2['BD'].append((adjacency,weight))
-            if nodes:
-                 if not "BD" in nodes:
-                    nodesPerAdjacency2[adjacency].add("BD")
-            else:
-                print "YES"
-                print adjacency
-                nodesPerAdjacency2[adjacency] = set("BD")
-                #nodes = nodesPerAdjacency2[adjacency]
+        if line.startswith("#"):
+            n = line.rstrip("\n")[1:]
+            adjacenciesPerNode2[n] = []
         else:
-            if nodes:
-                if "BD" in nodes:
-                    nodesPerAdjacency2[adjacency].remove("BD")
+            fields = line.split("\t")
+            left = fields[0][1:]
+            right = fields[1]
+            weight = float(fields[3])
+            adjacency = (left,right)
+            rev = (right,left)
+            nodes = []
+            if adjacency in nodesPerAdjacency2:
+                nodes = nodesPerAdjacency2[adjacency]
+            elif rev in nodesPerAdjacency2:
+                nodes = nodesPerAdjacency2[rev]
+
+            if weight > threshold:
+                adjacencyProbs2[n][(left,right)] = weight
+                adjacenciesPerNode2[n].append((adjacency,weight))
+                if nodes:
+                    if not n in nodes:
+                        nodesPerAdjacency2[adjacency].add(n)
+                else:
+                    nodesPerAdjacency2[adjacency] = set(n)
+                    #nodes = nodesPerAdjacency2[adjacency]
+            else:
+                if nodes:
+                    if n in nodes:
+                        nodesPerAdjacency2[adjacency].remove(n)
 
 
 

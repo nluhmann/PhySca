@@ -34,15 +34,6 @@ def enumJointLabelings(ccs):
                         newlabels.add(tuple(newlabel))
             labelings = labelings.union(newlabels)
         joint[cc] = labelings
-        #
-        # if len(labelings) > 1000:
-        #     print cc.edges()
-        #     # for x in labelings:
-        #     #      print x
-        #     print len(edges)
-        #     print len(nodes)
-        #     print len(labelings)
-        #     print "-----"
 
     return joint,fi
 
@@ -213,7 +204,7 @@ def annotateleaves(leaf,cc,extant):
     return label
 
 
-#CHANGED: if labels are the same, cost is not always 0 (we have to pay for adjacencies that are not present in the label!)
+
 def sankoff_bottomup(t,space):
     """
 
@@ -381,9 +372,6 @@ def computeLabelWeight(label,edges,alpha, probs,node):
 
 
 
-
-
-
 def reconstructedAdjacencies(resolvedCCs):
     adjacencies = {}
 
@@ -487,7 +475,6 @@ def sankoff_bottomup_sampling(t,space):
 
 
 def sankoff_topdown_sampling(t):
-    print "TOP DOWN"
     for node in t.traverse(strategy="preorder"):
         if node.is_root():
             #sum NumberOfOptimals for all optimal labels at root
@@ -503,8 +490,7 @@ def sankoff_topdown_sampling(t):
 
             for lab in minLabels:
                 sumOpt = sumOpt + node.numberOfOptimals[lab]
-            if not sumOpt == 1:
-                print "root", str(sumOpt)
+
             draw = random.randint(1, sumOpt)
             x = draw
             final = ""
@@ -538,8 +524,7 @@ def sankoff_topdown_sampling(t):
             optLabelArray = []
             for lab in minAllLabel:
                 sumOpt = sumOpt + node.numberOfOptimals[lab]
-            if not sumOpt == 1:
-                print node.name+" "+str(sumOpt)
+
             draw = random.randint(1, sumOpt)
             x = draw
             final = ""
@@ -550,15 +535,6 @@ def sankoff_topdown_sampling(t):
                     break
 
 
-
-
-
-            # if sumOpt > 1:
-            #     print node.name
-            #     print sumOpt
-            #     print draw
-            #     print optLabelArray
-            #final = optLabelArray[draw-1]
             node.add_feature("assignment",final)
     return t
 

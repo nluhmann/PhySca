@@ -1,6 +1,11 @@
 __author__ = 'Nina'
 
 
+#scaffold reconstructed adjacencies at each internal node
+
+
+
+
 def scaffoldAdjacencies(reconstructedAdj):
     print "Scaffolding..."
     scaffoldsPerNode = {}
@@ -60,7 +65,6 @@ def scaffoldAdjacencies(reconstructedAdj):
         scaffold2 = mergeScaffolds(scaffold)
         scaffoldsPerNode[node] = scaffold2
     return scaffoldsPerNode
-
 
 
 def mergeScaffolds(scaffold):
@@ -145,9 +149,6 @@ def mergeScaffolds(scaffold):
                     merged = True
                     break
         return scaffold
-
-
-
 
 
 def getOtherExtremity(extremity):

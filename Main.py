@@ -1,4 +1,4 @@
-__author__ = 'Nina'
+__author__ = 'nluhmann'
 from ete2 import Tree
 import getAdjacencies
 import globalAdjacencyGraph
@@ -7,26 +7,7 @@ import scaffolding
 import argparse
 import time
 
-# steps of action
-# 1) reading tree - check
-# 2) read order of unique universal marker and compute adjacencies - check
-# 3) assign ancestral adjacencies (different possibilities!) - Dollo check
-# 4) build global adjacency graph - check
-# 5) identify CCs in global adjacency graph - check
-# 6) run Sankoff for each CC - check
-# 7) sampling
 
-
-# parser = argparse.ArgumentParser(description="PhySca")
-# parser.add_argument("marker", type=str, help="marker order of extant genomes")
-# parser.add_argument("tree", type=str, help="tree file in newick format")
-# parser.add_argument("alpha", type=float, help="alpha parameter in objective function, [0,1]")
-# group = parser.add_mutually_exclusive_group(required=True)
-# group.add_argument("-d", "--dollo", action="store_true", help="Assign potential adjacencies by dollo principle")
-# group.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]")
-# parser.add_argument("-kT", type=float, help="deClone constant", default=0.1)
-# parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
-# args = parser.parse_args()
 
 
 parser = argparse.ArgumentParser(description="PhySca")
@@ -36,19 +17,16 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-m", "--marker", type=str, help="marker order of extant genomes")
 group.add_argument("-a", "--adjacencies", type=str, help="adjacencies in extant genomes")
 group2 = parser.add_mutually_exclusive_group(required=True)
-group2.add_argument("-d", "--dollo", action="store_true", help="Assign potential adjacencies by dollo principle")
+#group2.add_argument("-d", "--dollo", action="store_true", help="Assign potential adjacencies by dollo principle")
 group2.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]")
-group2.add_argument("-w", "--weight", type=str, help="weights for adjacencies at one internal nodes, adjacencies at other nodes get weight=0.5")
-parser.add_argument("-gx", type=str, help="weights for adjacencies at one internal nodes, adjacencies at other nodes get weights computed by Declone, "
+group2.add_argument("-w", "--weight", type=str, help="weights for adjacencies at specific internal nodes, adjacencies at other nodes get weight=0")
+parser.add_argument("-gx", type=str, help="weights for adjacencies at specific internal nodes, adjacencies at other nodes get weights computed by Declone, "
                                           "parameter -x must be given!")
 parser.add_argument("-kT", type=float, help="deClone constant", default=0.1)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
 args = parser.parse_args()
 
-#some checks for argument combinations:
-# if args.marker:
-#     if not args.dollo or not args.x:
-#         parser.error('error')
+
 
 
 t0 = time.time()
@@ -100,18 +78,18 @@ if args.marker:
     getAdjacencies.outputAdjacencies(extantAdjacencies)
 
 
-    if args.dollo:
-        #assign by dollo principle
+    # if args.dollo:
+    #     #assign by dollo principle
+    #
+    #     #compute potential ancestral adjacencies
+    #     print "Assign potential adjacencies by Dollo principle..."
+    #     pairPaths = getAdjacencies.findTreePaths(tree)
+    #     adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
+    #     getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
+    #     nodesPerAdjacencyTwo, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,0,tree,args.alpha,args.kT, args.tree)
 
-        #compute potential ancestral adjacencies
-        print "Assign potential adjacencies by Dollo principle..."
-        pairPaths = getAdjacencies.findTreePaths(tree)
-        adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
-        getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
-        nodesPerAdjacencyTwo, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,0,tree,args.alpha,args.kT, args.tree)
 
-
-    elif args.x != None:
+    if args.x != None:
         #assign by weight threshold
         print "Assign potential adjacencies that have a weight > "+str(args.x)
         nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,args.x,tree, args.alpha, args.kT, args.tree)
@@ -126,18 +104,18 @@ elif args.adjacencies:
     #adjacencies given,
     extantAdjacencies = getAdjacencies.readAdjacencyFile(args.adjacencies)
 
-    if args.dollo:
-        # compute weights with DeClone but assign by dollo principle
-        #compute potential ancestral adjacencies
-        print "Assign potential adjacencies by Dollo principle..."
-        pairPaths = getAdjacencies.findTreePaths(tree)
-        adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
-        for node in adjacenciesAtNodes:
-            print "Number of assigned adjacencies at "+node.name+": "+str(len(adjacenciesAtNodes[node]))
-        getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
-        nodesPerAdjacencyTwo, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,0,tree,args.alpha,args.kT, args.tree)
+    # if args.dollo:
+    #     # compute weights with DeClone but assign by dollo principle
+    #     #compute potential ancestral adjacencies
+    #     print "Assign potential adjacencies by Dollo principle..."
+    #     pairPaths = getAdjacencies.findTreePaths(tree)
+    #     adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
+    #     for node in adjacenciesAtNodes:
+    #         print "Number of assigned adjacencies at "+node.name+": "+str(len(adjacenciesAtNodes[node]))
+    #     getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
+    #     nodesPerAdjacencyTwo, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,0,tree,args.alpha,args.kT, args.tree)
 
-    elif args.x != None and args.gx == None:
+    if args.x != None and args.gx == None:
         #compute weights with DeClone but assign weight threshold
         print "Assign potential adjacencies that have a weight > "+str(args.x)
         nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,args.x,tree, args.alpha, args.kT, args.tree)
@@ -146,15 +124,8 @@ elif args.adjacencies:
             print "Number of assigned adjacencies at "+node+": "+str(len(adjacenciesPerNode[node]))
 
     elif args.weight:
-        #weights for one internal node given, assign 0.5 for all other adjacencies, Dollo assignment
-        # print "Assign other potential adjacencies by Dollo principle..."
-        # pairPaths = getAdjacencies.findTreePaths(tree)
-        # adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
-        # for node in adjacenciesAtNodes:
-        #     print "number of assigned adjacencies at "+node.name+": "+str(len(adjacenciesAtNodes[node]))
-        # getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
-        # #assign given weights for one node, 0.5 for all other nodes
-        # adjacencyProbs = getAdjacencies.computeWeightProbs(args.weight, extantAdjacencies, tree)
+        #weights for one internal node given, assign 0 for all other adjacencies
+
         print "Assign potential adjacencies that have a weight > "+str(args.x)
         x = 0
         nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,x,tree, args.alpha, args.kT, args.tree)
@@ -176,7 +147,6 @@ elif args.adjacencies:
 
 
 
-#nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode
 
 
 
@@ -191,7 +161,7 @@ globalAdjacencyGraph.outputConflicts(conflicts,"conflicts")
 
 jointLabels, first = SR.enumJointLabelings(ccs)
 validLabels, validAtNode = SR.validLabels(jointLabels,first)
-#validAtNode = SR.useAllLabels(jointLabels,first,tree)
+
 
 
 

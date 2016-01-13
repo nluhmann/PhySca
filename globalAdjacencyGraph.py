@@ -10,14 +10,6 @@ import math
 # key: adjacency, value: list of internal nodes
 # graph: #keys: nodes, value: dict (keys: neighbors, value:additional infos if needed)
 def createGraph(extant,ancestral):
-    # test = nx.Graph()
-    # for adja in extant:
-    #     test.add_edge(adja[0],adja[1])
-    # #connected components as subgraphs
-    # testgraphs = [c for c in sorted(nx.connected_component_subgraphs(test), key=len, reverse=True)]
-    # #print nx.all_pairs_shortest_path(graphs[0])
-    # print "biggest CC, number of nodes extant: "+str(nx.number_of_nodes(testgraphs[0]))
-    # print "biggest CC, number of edges extant: "+str(nx.number_of_edges(testgraphs[0]))
 
     print "Create global adjacency graph..."
     G=nx.Graph()
@@ -25,20 +17,8 @@ def createGraph(extant,ancestral):
     for adj in ancestral:
         ancestralSpecies = ancestral[adj]
         G.add_edge(adj[0],adj[1], species=ancestralSpecies)
-        #note to Nina: if edges gets more than one annotation in species, they are put in a set, everything okay!
 
-    # counter = 0
-    # for exAdj in extant:
-    #     if G.has_edge(exAdj[0],exAdj[1]):
-    #         speciesSet = G[exAdj[0]][exAdj[1]]["species"]
-    #     else:
-    #         G.add_edge(exAdj[0],exAdj[1])
-    #         counter = counter +1
-    #         speciesSet = set()
-    #     specs = extant[exAdj]
-    #     for elem in specs:
-    #         speciesSet.add(elem[0])
-    #     G[exAdj[0]][exAdj[1]]["species"] = speciesSet
+
 
     print " "
     print "Global adjacency graph:"
@@ -60,16 +40,13 @@ def createGraph(extant,ancestral):
     complex = 7 * math.pow(numberOfLabels,2)
     print "Number of Labels: "+str(numberOfLabels)
     print "Complexity: "+str(complex)
-    if len(graphs) > 10:
-        for i in range(0,10):
-            #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
-            print str(nx.number_of_edges(graphs[i]))
+    # if len(graphs) > 10:
+    #     for i in range(0,10):
+    #         #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
+    #         print str(nx.number_of_edges(graphs[i]))
     return graphs
 
 
-
-def outputConnectedComponents(graphs):
-    x=1
 
 
 def analyseConnectedComponents(graphs):
