@@ -189,16 +189,22 @@ def outputUndoubledScaffolds(scaffolds,output):
     file = open(output,"w")
     for node in scaffolds:
         file.write(">"+node+" "+str(len(scaffolds[node]))+"\n")
+        counter = 1
         for scaff in scaffolds[node]:
+            file.write("#"+str(counter)+"\n")
             file.write(" ".join(str(x) for x in scaff)+" $\n")
+            counter = counter + 1
     file.close()
 
 def outputScaffolds(scaffolds,output):
     file = open(output,"w")
     for node in scaffolds:
         file.write(">"+node+" "+str(len(scaffolds[node]))+"\n")
+        counter = 1
         for scaff in scaffolds[node]:
+            file.write("#"+str(counter)+"\n")
             file.write(" ".join(str(x) for x in scaffolds[node][scaff])+" $\n")
+            counter = counter + 1
     file.close()
 
 

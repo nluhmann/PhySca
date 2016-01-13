@@ -28,52 +28,52 @@ class TestSR(TestCase):
         TestCase.assertEqual(self,len(valid[self.graph]),8)
 
 
-    def test_cost(self):
-        label1 = [('a', '-'), ('b', '-'), ('c', '-'), ('d', '-'), ('e', '-'), ('f', '-')]
-        label2 = [('a', ('a', 'c')), ('b', '-'), ('c', ('a', 'c')), ('d', '-'), ('e', ('e', 'f')), ('f', ('e', 'f'))]
-        label3 = [('a', ('a', 'c')), ('b', '-'), ('c', ('a', 'c')), ('d', '-'), ('e', '-'), ('f', '-')]
-        label4 = [('a', ('a', 'd')), ('b', '-'), ('c', '-'), ('d', ('a', 'd')), ('e', '-'), ('f', '-')]
-        cost1 = SR.cost(label1,label2,self.graph.edges())
-        #TestCase.assertEqual(self,cost1,3)
-        cost2 = SR.cost(label2,label3,self.graph.edges())
-        #TestCase.assertEqual(self,cost2,3)
-        cost3 = SR.cost(label3,label4,self.graph.edges())
-        #TestCase.assertEqual(self,cost3,3.5)
-        labelx = [('8', ('8','9')), ('9', ('8','9'))]
-        labely = [('8', ('8','9')), ('9', ('8','9'))]
-        cost4 = SR.cost(labelx,labely,[('8','9')])
-        TestCase.assertEqual(self,cost4,0)
+    # def test_cost(self):
+    #     label1 = [('a', '-'), ('b', '-'), ('c', '-'), ('d', '-'), ('e', '-'), ('f', '-')]
+    #     label2 = [('a', ('a', 'c')), ('b', '-'), ('c', ('a', 'c')), ('d', '-'), ('e', ('e', 'f')), ('f', ('e', 'f'))]
+    #     label3 = [('a', ('a', 'c')), ('b', '-'), ('c', ('a', 'c')), ('d', '-'), ('e', '-'), ('f', '-')]
+    #     label4 = [('a', ('a', 'd')), ('b', '-'), ('c', '-'), ('d', ('a', 'd')), ('e', '-'), ('f', '-')]
+    #     cost1 = SR.cost(label1,label2,self.graph.edges())
+    #     #TestCase.assertEqual(self,cost1,3)
+    #     cost2 = SR.cost(label2,label3,self.graph.edges())
+    #     #TestCase.assertEqual(self,cost2,3)
+    #     cost3 = SR.cost(label3,label4,self.graph.edges())
+    #     #TestCase.assertEqual(self,cost3,3.5)
+    #     labelx = [('8', ('8','9')), ('9', ('8','9'))]
+    #     labely = [('8', ('8','9')), ('9', ('8','9'))]
+    #     cost4 = SR.cost(labelx,labely,[('8','9')])
+    #     TestCase.assertEqual(self,cost4,0)
 
-    def test_computeLabeling(self):
-        chrom = {}
-        chrom["one"] = ["3","4","5","6","7","8"]
-        chrom["two"] = ["1","2"]
-        species = {}
-        species["A"] = chrom
-        chrom = {}
-        chrom["one"] = ["-4","5","-3","6","7","8"]
-        chrom["two"] = ["1","2"]
-        species["B"] = chrom
-        chrom = {}
-        chrom["one"] = ["3","4","5","6","7","8"]
-        chrom["two"] = ["1","2"]
-        species["E"] = chrom
-        chrom = {}
-        chrom["one"] = ["4","5","-3","6","7","8"]
-        chrom["two"] = ["1","2"]
-        species["D"] = chrom
-
-        adj = getAdjacencies.findAdjacencies(species)
-        tree = Tree("(A:1,(B:1,(E:1,D:1)Int_1:0.5[&&NHX:ancient=1])Int_2:0.5[&&NHX:ancient=0])Root;", format=1)
-        paths = getAdjacencies.findTreePaths(tree)
-        internal,adjacenciesAncestral = getAdjacencies.assignAncestralAdjacencies(paths,adj,tree)
-        graphs = globalAdjacencyGraph.createGraph(adj,adjacenciesAncestral)
-        jointLabels, first = SR.enumJointLabelings(graphs)
-        validLabels, validAtNode = SR.validLabels(jointLabels,first)
-
-        resolvedCCs = SR.computeLabelings(tree, graphs, validAtNode, adj)
-        reconstructedAdj = SR.reconstructedAdjacencies(resolvedCCs)
-        print reconstructedAdj
+    # def test_computeLabeling(self):
+    #     chrom = {}
+    #     chrom["one"] = ["3","4","5","6","7","8"]
+    #     chrom["two"] = ["1","2"]
+    #     species = {}
+    #     species["A"] = chrom
+    #     chrom = {}
+    #     chrom["one"] = ["-4","5","-3","6","7","8"]
+    #     chrom["two"] = ["1","2"]
+    #     species["B"] = chrom
+    #     chrom = {}
+    #     chrom["one"] = ["3","4","5","6","7","8"]
+    #     chrom["two"] = ["1","2"]
+    #     species["E"] = chrom
+    #     chrom = {}
+    #     chrom["one"] = ["4","5","-3","6","7","8"]
+    #     chrom["two"] = ["1","2"]
+    #     species["D"] = chrom
+    #
+    #     adj = getAdjacencies.findAdjacencies(species)
+    #     tree = Tree("(A:1,(B:1,(E:1,D:1)Int_1:0.5[&&NHX:ancient=1])Int_2:0.5[&&NHX:ancient=0])Root;", format=1)
+    #     paths = getAdjacencies.findTreePaths(tree)
+    #     internal,adjacenciesAncestral = getAdjacencies.assignAncestralAdjacencies(paths,adj,tree)
+    #     graphs = globalAdjacencyGraph.createGraph(adj,adjacenciesAncestral)
+    #     jointLabels, first = SR.enumJointLabelings(graphs)
+    #     validLabels, validAtNode = SR.validLabels(jointLabels,first)
+    #
+    #     resolvedCCs = SR.computeLabelings(tree, graphs, validAtNode, adj)
+    #     reconstructedAdj = SR.reconstructedAdjacencies(resolvedCCs)
+    #     print reconstructedAdj
 
 
     def test_sampleLabelings(self):

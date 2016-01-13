@@ -1,11 +1,11 @@
 __author__ = 'Nina'
 from ete2 import Tree
-import sys
 import getAdjacencies
 import globalAdjacencyGraph
 import SR
 import scaffolding
 import argparse
+import time
 
 # steps of action
 # 1) reading tree - check
@@ -51,6 +51,7 @@ args = parser.parse_args()
 #         parser.error('error')
 
 
+t0 = time.time()
 
 
 # read tree file
@@ -78,20 +79,20 @@ if args.marker:
             if not species == "":
                 species_marker_order[species] = chromosomes
                 print species
-                print markerCounter
+                print markerCount
             species = line.split("\t")[0][1:]
             chromosomes = {}
-            markerCounter = 0
+            markerCount = 0
             # new chromosome
         elif line.startswith("#"):
             chrom = line.rstrip("\n")[2:]
         elif not line == "\n":
             order = line.rstrip("\n")[:-2].split(" ")
-            markerCounter = markerCounter + len(order)
+            markerCount = markerCount + len(order)
             chromosomes[chrom] = order
     species_marker_order[species] = chromosomes
     print species
-    print markerCounter
+    print markerCount
     file.close()
 
     #compute adjacencies
@@ -136,7 +137,7 @@ elif args.adjacencies:
         getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
         nodesPerAdjacencyTwo, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,0,tree,args.alpha,args.kT, args.tree)
 
-    elif args.x != None:
+    elif args.x != None and args.gx == None:
         #compute weights with DeClone but assign weight threshold
         print "Assign potential adjacencies that have a weight > "+str(args.x)
         nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,args.x,tree, args.alpha, args.kT, args.tree)
@@ -146,21 +147,28 @@ elif args.adjacencies:
 
     elif args.weight:
         #weights for one internal node given, assign 0.5 for all other adjacencies, Dollo assignment
-        print "Assign other potential adjacencies by Dollo principle..."
-        pairPaths = getAdjacencies.findTreePaths(tree)
-        adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
-        for node in adjacenciesAtNodes:
-            print "number of assigned adjacencies at "+node.name+": "+str(len(adjacenciesAtNodes[node]))
-        getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
-        #assign given weights for one node, 0.5 for all other nodes
+        # print "Assign other potential adjacencies by Dollo principle..."
+        # pairPaths = getAdjacencies.findTreePaths(tree)
+        # adjacenciesAtNodes, nodesPerAdjacency = getAdjacencies.assignAncestralAdjacencies(pairPaths, extantAdjacencies, tree)
+        # for node in adjacenciesAtNodes:
+        #     print "number of assigned adjacencies at "+node.name+": "+str(len(adjacenciesAtNodes[node]))
+        # getAdjacencies.outputAncestralAdjacencies(adjacenciesAtNodes,"ancestral_assigned_adjacencies")
+        # #assign given weights for one node, 0.5 for all other nodes
+        # adjacencyProbs = getAdjacencies.computeWeightProbs(args.weight, extantAdjacencies, tree)
+        print "Assign potential adjacencies that have a weight > "+str(args.x)
+        x = 0
+        nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,x,tree, args.alpha, args.kT, args.tree)
+        #getAdjacencies.outputAncestralAdjacenciesWithProbabilities(adjacenciesPerNode,"ancestral_assigned_adjacencies_with_weight")
+        for node in adjacenciesPerNode:
+            print "Number of assigned adjacencies at "+node+": "+str(len(adjacenciesPerNode[node]))
         adjacencyProbs = getAdjacencies.computeWeightProbs(args.weight, extantAdjacencies, tree)
 
 
     elif args.gx:
         #weights for one internal node given, DeClone weights for all other adjacencies and assignment by threshold
-        nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode = getAdjacencies.deCloneProbabilities(extantAdjacencies,args.x,tree, args.alpha, args.kT, args.tree)
-        nodesPerAdjacency, adjacencyProbs = getAdjacencies.assignGAMLweights(args.weight, nodesPerAdjacency2, adjacencyProbs2)
-
+        nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode2 = getAdjacencies.deCloneProbabilities(extantAdjacencies,args.x,tree, args.alpha, args.kT, args.tree)
+        nodesPerAdjacency, adjacencyProbs, adjacenciesPerNode = getAdjacencies.assignGAMLweights(args.gx, nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode2, args.x)
+        getAdjacencies.outputAncestralAdjacenciesWithProbabilities(adjacenciesPerNode,"ancestral_assigned_adjacencies_with_weight")
 
     else:
         parser.error('error, no mode given')
@@ -205,14 +213,34 @@ scaffolding.sanityCheckScaffolding(undoubled)
 for node in undoubled:
     print node
     markerCounter = 0
-    print "number of scaffolds: "+str(len(undoubled[node]))
     for scaffold in undoubled[node]:
-        markerCounter = markerCounter + len(scaffold)
-    print "number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+        first = scaffold[0]
+        last = scaffold[-1]
+        if not first == last:
+            markerCounter = markerCounter + len(scaffold)
+        else:
+            markerCounter = markerCounter + len(scaffold)-1
+    print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+    if args.marker:
+        notRec = markerCount - markerCounter
+    else:
+        notRec = 2207 - markerCounter
+    print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
+    print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
+
+
+
+print time.time() - t0, "seconds process time"
+
+
+
 
 if args.sampling:
     print "SAMPLING"
+
     for i in range(0,args.sampling):
+        t1 = time.time()
+        jointLabels, first = SR.enumJointLabelings(ccs)
         validLabels, validAtNode = SR.validLabels(jointLabels,first)
         print "###################### "+str(i)+" ######################"
         topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
@@ -233,7 +261,18 @@ if args.sampling:
         for node in undoubled:
             print node
             markerCounter = 0
-            print "number of scaffolds: "+str(len(undoubled[node]))
             for scaffold in undoubled[node]:
-                markerCounter = markerCounter + len(scaffold)
-            print "number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+                first = scaffold[0]
+                last = scaffold[-1]
+                if not first == last:
+                    markerCounter = markerCounter + len(scaffold)
+                else:
+                    markerCounter = markerCounter + len(scaffold)-1
+            print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+            if args.marker:
+                notRec = markerCount - markerCounter
+            else:
+                notRec = 2207 - markerCounter
+            print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
+            print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
+        print time.time() - t1, "seconds process time"

@@ -63,12 +63,10 @@ class MyTestCase(unittest.TestCase):
         unittest.TestCase.assertEqual(self,internal2,shared)
         shared = set([(7,9)])
         unittest.TestCase.assertNotEqual(self,internal2,shared)
-        anc = {(2,3):set([self.int3,self.int2])}
-        unittest.TestCase.assertEqual(self,anc,adjacenciesAncestral)
 
-    def test_deCloneProbabilities(self):
-        extant = {(1,2):[("bosTau3","chr18"),("hg18","chr1"), ("mm9","chr2")]}
-        getAdjacencies.deCloneProbabilities(extant,"","")
+
+
+
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ __author__ = 'Nina'
 
 import itertools
 import subprocess
+import os
 
 
 
@@ -149,7 +150,9 @@ def deCloneProbabilities(extantAdjacencies, threshold, tree, alpha, kT, treefile
     adjacencyProbs = {}
     for adjacency in extantAdjacencies:
         #produce list of extant adjacencies for declone
-        file = open("/Users/Nina/Desktop/Mammalian/list","w")
+        path = os.path.dirname(os.path.realpath(__file__))
+        listVar = "list_"+str(threshold)+str(alpha)+str(kT)
+        file = open(path+"/"+listVar,"w")
         species = extantAdjacencies[adjacency]
         for spec in species:
             file.write(spec[0]+" "+spec[0]+"\n")
@@ -159,8 +162,9 @@ def deCloneProbabilities(extantAdjacencies, threshold, tree, alpha, kT, treefile
                 adjacencyProbs[spec]={adjacency:1}
         file.close()
         #use declone to compute probs
-        command = "/Users/Nina/Desktop/Mammalian/declone -t1 "+treefile+" -t2 "+treefile+" -a /Users/Nina/Desktop/Mammalian/list -i -kT "+str(kT)
-        output = subprocess.check_output(command,shell=True)
+
+        command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+path+"/"+listVar+' -i -kT '+str(kT)
+        output = subprocess.check_output(command, shell=True, cwd=path)
         #output is just matrix with probabilities
         #each line of the output should contain max one number greater 0, save for internal nodes
         lines = output.split("\n")
@@ -211,7 +215,7 @@ def computeWeightProbs(weighting, extantAdjacencies, tree):
 
     for adjacency in extantAdjacencies:
         for key in adjacencyProbs:
-            adjacencyProbs[key][adjacency] = 0.5
+            adjacencyProbs[key][adjacency] = 0
 
     file = open(weighting,"r")
     for line in file:
@@ -219,7 +223,7 @@ def computeWeightProbs(weighting, extantAdjacencies, tree):
         left = fields[0][1:]
         right = fields[1]
         weight = fields[3]
-        adjacencyProbs['@'][(left,right)] = float(weight)
+        adjacencyProbs['BD'][(left,right)] = float(weight)
     file.close()
 
     return adjacencyProbs
@@ -227,23 +231,45 @@ def computeWeightProbs(weighting, extantAdjacencies, tree):
 
 
 
-def assignGAMLweights(weighting, nodesPerAdjacency2, adjacencyProbs2):
+def assignGAMLweights(weighting, nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode2, threshold):
     #read probabilities from file, assume that all assigned adjacencies at this node have a weight in this file
     file = open(weighting,"r")
+    adjacenciesPerNode2['BD'] = []
+    threshold = float(threshold)
     for line in file:
         fields = line.split("\t")
         left = fields[0][1:]
         right = fields[1]
+        weight = float(fields[3])
         adjacency = (left,right)
-        nodes = nodesPerAdjacency2[adjacency]
-        if not "@" in nodes:
-            nodesPerAdjacency2[adjacency].add("@")
+        rev = (right,left)
+        nodes = []
+        if adjacency in nodesPerAdjacency2:
+            nodes = nodesPerAdjacency2[adjacency]
+        elif rev in nodesPerAdjacency2:
+            nodes = nodesPerAdjacency2[rev]
 
-        weight = fields[3]
-        adjacencyProbs2['@'][(left,right)] = float(weight)
+        if weight > threshold:
+            adjacencyProbs2['BD'][(left,right)] = weight
+            adjacenciesPerNode2['BD'].append((adjacency,weight))
+            if nodes:
+                 if not "BD" in nodes:
+                    nodesPerAdjacency2[adjacency].add("BD")
+            else:
+                print "YES"
+                print adjacency
+                nodesPerAdjacency2[adjacency] = set("BD")
+                #nodes = nodesPerAdjacency2[adjacency]
+        else:
+            if nodes:
+                if "BD" in nodes:
+                    nodesPerAdjacency2[adjacency].remove("BD")
+
+
+
     file.close()
 
-    return nodesPerAdjacency2, adjacencyProbs2
+    return nodesPerAdjacency2, adjacencyProbs2, adjacenciesPerNode2
 
 
 
