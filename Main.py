@@ -103,6 +103,7 @@ if args.marker:
 elif args.adjacencies:
     #adjacencies given,
     extantAdjacencies = getAdjacencies.readAdjacencyFile(args.adjacencies)
+    extantAdjacencies_species_adj=getAdjacencies.readAdjacencyFile_output_spec_adj(args.adjacencies)
 
     # if args.dollo:
     #     # compute weights with DeClone but assign by dollo principle

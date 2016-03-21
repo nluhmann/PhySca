@@ -63,6 +63,27 @@ def readAdjacencyFile(file):
     return adjacencies
 
 
+#read FPSAC adjacency file and output dictionary with {species:adj} as structure
+def readAdjacencyFile_output_spec_adj(file):
+    print "collect extant adjacencies from provided adjacency file"
+    # keys: (left marker, right marker), value: [(species,chromosome),...]
+    dict_spec_adj = {}
+    f = open(file,"r")
+    for line in f:
+        fields = line.rstrip("\n").split("#")
+        adjas = fields[0].split(":")
+        left = adjas[1].split(" ")[0]
+        right = adjas[1].split(" ")[1]
+        for extant in fields[1:]:
+            species = extant.split(":")[0].split(".")[0]
+            #make an entry for each species, which is filled with all adj of the species
+            if species not in dict_spec_adj:
+                dict_spec_adj.update({species:set()})
+                dict_spec_adj[species].add((left,right))
+            else:
+                dict_spec_adj[species].add((left,right))
+    return dict_spec_adj
+
 def outputAdjacencies(adjacencies):
     adjOut = "extant_adjacencies"
     file = open(adjOut,"w")
