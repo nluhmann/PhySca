@@ -220,7 +220,7 @@ if args.sampling:
             print node
             print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
 
-
+		   
 
         scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
         undoubled = scaffolding.undoubleScaffolds(scaffolds)
@@ -246,3 +246,36 @@ if args.sampling:
             print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
             print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
         print time.time() - t1, "seconds process time"
+        
+        
+        
+        
+#calculate single-cut-and-join-score for sampled tree 
+def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies):
+	scj_dist=0 #initialize the single-cut-or-join-distance
+
+	#traversing all nodes except the root                    
+	for node in tree.iter_descendants("postorder"):
+		#print node.name+"_"+node.up.name #this pair represent the current considered edge of the tree
+		#the adjacencies of each node are either in reconstructedAdjs (internal nodes and root) or in extantAdjacenies (leaves)
+		#for each node, get the set of adjs
+		set_of_node_adj=set()
+		if node.name in reconstructedAdj: # if the current node is an internal node ...
+			set_of_node_adj=set(reconstructedAdj[node.name]) #... get the adjacencies from reconstructedAdjs
+		else: # if the current node isn't an internal node
+			for adj in extantAdjacencies: # search extantAdjacencies for the node and ...
+				if node.name in extantAdjacencies[adj]: #... retrieve the adjancencies of the node
+					set_of_node_adj.add(adj)
+			#for each parent node of the current node get the set of adjs	
+			set_of_nodes_parent_adj=set()
+			if node.up.name in reconstructedAdj: # if the parent of the current node is an internal node...
+				set_of_nodes_parent_adj=set(reconstructedAdj[node.up.name])	 #... get the adjacencies from reconstructedAdjs
+			else: # if the current node's parent isn't an internal node (shouldn't occur)
+				for adj in extantAdjacencies:
+					if node.up.name in extantAdjacencies[adj]:
+						set_of_nodes_parent_adj.add(adj)
+			#calculate the SCJ distance of the current pair and add it to the total scj-distance of the whole tree
+			scj_dist+= len(set_of_node_adj.difference(set_of_nodes_parent_adj))+len(set_of_nodes_parent_adj.difference(set_of_node_adj))  
+	print "Single-Cut-or-Join-Distance: "+str(scj_dist)  
+
+calculate_SCJ(tree, reconstructedAdj, extantAdjacencies)
