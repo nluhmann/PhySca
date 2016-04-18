@@ -1,10 +1,12 @@
 import sys,os,subprocess,tempfile
 import argparse
-from ete2 import Tree
+#from ete2 import Tree
 #global variables
 #path for output file in Nhx-Format
 nhxFileOut='./nhx_tree'
-listOfWeightOut='./listofadjweight'
+listOfExtWeightOut = './weighted_extant_adjacencies'
+listOfIntWeightOut = './weighted_internal_adjacencies'
+singleLeafAdjOut = './single_leaf_adjacencies'
 
 #convert NEWICK tree notation with weights into nhx notation
 #parameter: file - the path to the file with the tree in NEWICK-notation
@@ -133,6 +135,7 @@ def construct_species_name(line,nameStartPos,nameEndPos,numberUnamedNodes):
             lastSpeciesName = "node" + str(numberUnamedNodes)
     return lastSpeciesName
 
+#retrieve extant adjacencies
 def readAdjacencyFile(file):
     print "collect extant adjacencies from provided adjacency file"
     # keys: (left marker, right marker), value: [(species,chromosome),...]
@@ -188,76 +191,92 @@ def findAdjacencies(speciesHash):
 #adjacency is present in an adjacency forest sampled randomly from a
 #Boltzmann distribution. Then assign adjacency if it is above threshold to internal node of the tree.
 
-def deCloneProbabilities(extantAdjacencies, threshold, kT, listOfInternalNodes, treefile):
+def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print "Compute probabilities with DeClone..."
     adjacenciesPerNode = {}
+    singleLeafAdj={}
     for adjacency in extantAdjacencies:
         #produce list of extant adjacencies for declone
         path = os.path.dirname(os.path.realpath(__file__))
         tmpfile=tempfile.NamedTemporaryFile(delete=True) #create a temporary named file (appears with a arbitrary name in the directory)
         species = extantAdjacencies[adjacency]
-        for spec in species:
-            tmpfile.write(spec[0]+" "+spec[0]+"\n")
 
-        tmpfile.seek(0) #go to the beginning of the tmpfile
-        command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
+        if len(species)>1: #if an adjacency occurs just in one external leaf, it's ignored (just evolved at this leaf)
+            for spec in species:
+                tmpfile.write(spec[0]+" "+spec[0]+"\n")
+            tmpfile.seek(0) #go to the beginning of the tmpfile
+            command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
+            #use declone to compute probs
+            output = subprocess.check_output(command, shell=True, cwd=path)
+            tmpfile.close() #tmpfile is closed and immediately deleted
+            #output is just matrix with probabilities
+            #each line of the output should contain max one number greater 0, save for internal nodes
+            lines = output.split("\n")
+            for line in lines:
+                if not line == "" and not line.startswith("\t") and not line.startswith(">"):
+                    node = line.split("\t")[0]  #for each internal node,find the prob for the current adj to be at this node
+                    probs = line.split("\t")[1]
+                    probs = probs.rstrip(" ")
+                    probArray = probs.split(" ")
+                    probArrayFl = [float(x) for x in probArray]
+                    probability = max(probArrayFl, key=float)
+                    if node in listOfInternalNodes:
+                        if not len(species) == 1:
+                            if node in adjacenciesPerNode:
+                                adjacenciesPerNode[node].add((adjacency,probability))
+                            else:
+                                adjset = set()
+                                adjset.add((adjacency,probability))
+                                adjacenciesPerNode[node] = adjset
+        else:
+            #ignored adjacencies with only one leaf occuring in
+            singleLeafAdj.update({adjacency:species})
+    #ignored adjacencies are written into a special file
+    f=open(singleLeafAdjOut,'w')
+    for adj in singleLeafAdj:
+        f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\n')
+        del extantAdjacencies[adj] # remove all to be ignored adj from the hash
+    f.close()
 
-        #use declone to compute probs
-        output = subprocess.check_output(command, shell=True, cwd=path)
-        tmpfile.close() #tmpfile is closed and immediately deleted
-        #output is just matrix with probabilities
-        #each line of the output should contain max one number greater 0, save for internal nodes
 
-        lines = output.split("\n")
-        for line in lines:
-            if not line == "" and not line.startswith("\t") and not line.startswith(">"):
-                node = line.split("\t")[0]  #for each internal node,find the prob for the current adj to be at this node
-                probs = line.split("\t")[1]
-                probs = probs.rstrip(" ")
-                probArray = probs.split(" ")
-                probArrayFl = [float(x) for x in probArray]
-                probability = max(probArrayFl, key=float)
-                if node in listOfInternalNodes:
-                     if probability > threshold and not len(species) == 1:
-                        if node in adjacenciesPerNode:
-                            adjacenciesPerNode[node].add((adjacency,probability))
-
-                        else:
-                            adjset = set()
-                            adjset.add((adjacency,probability))
-                            adjacenciesPerNode[node] = adjset
     print "Generating output..."
     # output format: >internal node  adjacency  weight
     #                >external node  adjacency
-    file=open(listOfWeightOut, 'w')
+
     #internal nodes and root
+    file=open(listOfIntWeightOut, 'w')
     for node in adjacenciesPerNode:
         for adj_weight in adjacenciesPerNode[node]: #for each adjacency tuple with weight
             file.write('>'+str(node)+'\t') #write the node's name
             file.write('('+str(adj_weight[0][0])+','+str(adj_weight[0][1])+')') #write the adjacency tuple
             file.write('\t'+str(adj_weight[1])+'\t') #write the adjacency weight
             file.write('\n')
+
+    file.close()
     #external leaves
     leaves={}
+    singletempi={}
     for adj in extantAdjacencies:
-        for species in extantAdjacencies[adj]:
-            if species not in leaves:
-                adj_set=set()
-                adj_set.add(adj)
-                leaves.update({species:adj_set})
-            else:
-                old_set=leaves[species]
-                old_set.add(adj)
-                leaves.update({species:old_set})
+        #print len(extantAdjacencies[adj])
+        if len(extantAdjacencies[adj])>1:#adj occuring in just one leaf are ignored
+            for species in extantAdjacencies[adj]:
+                if species[0] not in leaves:
+                    adj_set=set()
+                    adj_set.add(adj)
+                    leaves.update({species[0]:adj_set})
+                else:
+                    old_set=leaves[species[0]]
+                    old_set.add(adj)
+                    leaves.update({species[0]:old_set})
+        
+    file=open(listOfExtWeightOut, 'w')
     for leave in leaves:
 
         for adj in leaves[leave]:
-            file.write('>'+str(leave[0])+'\t')
+            file.write('>'+str(leave)+'\t')
             #file.write('>'+str(leave[0])+'\t'+str(leave[1])+'\t') #for chromosome informations
             file.write('('+str(adj[0])+','+str(adj[1])+')'+'\t')
             file.write('\n')
-
-
     file.close()
 #get the internal nodes form the given nhx-treefile
 #   -seperatingChar: either ':', if tree includes weights or '[', if not
@@ -313,14 +332,14 @@ parser = argparse.ArgumentParser(description='Converts tree in NEWICK-format int
 groupFormat = parser.add_mutually_exclusive_group(required=True)
 groupFormat.add_argument("-nhx", "--nhx_Tree", type=str, help="path to the file with nhx-tree")
 groupFormat.add_argument("-nf",'--Newick', type=str,help='path to the file with NEWICK-tree')
-parser.add_argument("-i","--ignore_weights",action='store_const', const=True, help="bool for either ignore or consider edge length/weights, when parsing Newick Tree into nhx Tree")
+parser.add_argument("-i","--ignore_weights",action='store_const', const=True, help="boolean, for either ignore or consider edge length/weights, when parsing Newick Tree into nhx Tree")
 parser.add_argument("-sm","--set_minimum", type=float, help="minimal value for any edge length, when parsing Newick Tree into nhx Tree", default=0.0)
 groupAM = parser.add_mutually_exclusive_group(required=True)
 groupAM.add_argument("-a","--adjacencies",type=str, help="path to adjacency-file")
 groupAM.add_argument("-m","--markers",type=str,help="path to marker-file")
-parser.add_argument("-x","--threshold",type=float,help="treshold for probability", default=0.0)
 parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
-
+parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
+#parser.add_argument("-mA","--minNumAdj",type=int,help='minimal number of external nodes an adjacency has to occur to be considered', default=1)
 
 args = parser.parse_args()
 
@@ -329,28 +348,34 @@ if args.nhx_Tree:
     listOfInternalNodes=get_internal_nodes_from_treefile(':',args.nhx_Tree)
     if args.adjacencies:
         extantAdjacencies=readAdjacencyFile(args.adjacencies)
-        deCloneProbabilities(extantAdjacencies, args.threshold, args.kT,listOfInternalNodes, args.nhx_Tree)
+        deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
     elif args.markers:
         extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
-        deCloneProbabilities(extantAdjacencies, args.threshold, args.kT,listOfInternalNodes, args.nhx_Tree)
+        deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
     else:
         parser.error('Error: wrong parameter number or usage.')
 if args.Newick:
+
     if args.ignore_weights:
         parse_NEWICK_to_nhx(args.Newick, True,args.set_minimum)
         listOfInternalNodes=get_internal_nodes_from_treefile('[',nhxFileOut) #when no weights given, after a node's name comes a [
     else:
         parse_NEWICK_to_nhx(args.Newick,False,args.set_minimum)
         listOfInternalNodes=get_internal_nodes_from_treefile(':',nhxFileOut) #when weights given, after a node's name comes a :
+    if args.just_Parse:
+        print 'Parsed Newick-File to nhx-File.'
+    else:
+        if args.adjacencies:
+            extantAdjacencies=readAdjacencyFile(args.adjacencies)
+            deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, nhxFileOut)
+        elif args.markers:
+            extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
+            deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes,nhxFileOut)
+        else:
+            parser.error('Error: wrong parameter number or usage.')
 
-    if args.adjacencies:
-        extantAdjacencies=readAdjacencyFile(args.adjacencies)
-        deCloneProbabilities(extantAdjacencies, args.threshold, args.kT,listOfInternalNodes, nhxFileOut)
-    if args.markers:
-        extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
-        deCloneProbabilities(extantAdjacencies, args.threshold, args.kT, listOfInternalNodes,nhxFileOut)
-    if not args.adjacencies and not args.markers:
-        parser.error('Error: wrong parameter number or usage.')
+if not args.adjacencies and not args.markers:
+    parser.error('Error: wrong parameter number or usage.')
 if not args.nhx_Tree and not args.Newick:
     parser.error('Error: wrong parameter number or usage.')
 
