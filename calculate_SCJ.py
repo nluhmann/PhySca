@@ -18,22 +18,22 @@ def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj):
         set_of_nodes_parent_adj=set()
         if node.up.name in reconstructedAdj: # if the parent of the current node is an internal node...
             set_of_nodes_parent_adj=set(reconstructedAdj[node.up.name])	 #... get the adjacencies from reconstructedAdjs
-        #elif node.up.name in extantAdjacencies_species_adj:# if the current node's parent isn't an internal node (shouldn't occur)
-        #     set_of_nodes_parent_adj=set(extantAdjacencies_species_adj[node.up.name]) #... get the adjacencies from extantAdjacencies_species_adj
         else:
              print "ERROR: The species' name wasn't found"
         #print set_of_nodes_parent_adj
 
-        #build the SCJ distance from the parent node's set to the nodes set
-        scj_node=len(set_of_node_adj)
+        #compute the SCJ distance from the parent node's set to the nodes set
+        scj_node=len(set_of_node_adj) #scj_node counts how many elements are only at the node
+        #print 'node set length '+str(scj_node)
         for adj in set_of_node_adj:
             mirrored_adj=(adj[1],adj[0])
            # print str(adj)+'__'+str(mirrored_adj)
             if adj in set_of_nodes_parent_adj or mirrored_adj in set_of_nodes_parent_adj:
-                scj_node=scj_node-1
+                scj_node=scj_node-1 #if the current adj is also at the node's parent (even if it's mirrored), deduct 1 from scj_node
 
-        #build the SCJ distance from the node's set to the parent node's set
+        #compute the SCJ distance from the node's set to the parent node's set
         scj_parent=len(set_of_nodes_parent_adj)
+        #print 'parent node set length '+str(scj_parent)
         for adj in set_of_nodes_parent_adj:
             mirrored_adj=(adj[1],adj[0])
             #print str(adj)+'__'+str(mirrored_adj)
@@ -42,6 +42,7 @@ def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj):
         #calculate the SCJ distance of the current pair and add it to the total scj-distance of the whole tree
         temp=abs(scj_node)+abs(scj_parent)
         #temp=len(set_of_node_adj.difference(set_of_nodes_parent_adj))+len(set_of_nodes_parent_adj.difference(set_of_node_adj))
-        print temp
+        #print str(scj_node)+' '+str(scj_parent)
+        #print 'temp: '+str(temp)
         scj_dist+= temp
     print "Single-Cut-or-Join-Distance: "+str(scj_dist)
