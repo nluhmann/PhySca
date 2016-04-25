@@ -231,8 +231,10 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
         else:
             #ignored adjacencies with only one leaf occuring in
             singleLeafAdj.update({adjacency:species})
+            #print('Single Leaf: '+str(adjacency)+' '+str(species))
     #ignored adjacencies are written into a special file
     f=open(singleLeafAdjOut,'w')
+    print('Removed '+str(len(singleLeafAdj))+' Adjacencies occurring just in one external node/leaf')
     for adj in singleLeafAdj:
         f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\n')
         del extantAdjacencies[adj] # remove all to be ignored adj from the hash
@@ -328,7 +330,7 @@ def read_Marker_file(marker):
     return species_marker_order
 
 #parsing the input parameters
-parser = argparse.ArgumentParser(description='Converts tree in NEWICK-format into tree in nhx-format')
+parser = argparse.ArgumentParser(description='Weights given tree in nhx-format with DeClone. Also converts tree in NEWICK-format into tree in nhx-format')
 groupFormat = parser.add_mutually_exclusive_group(required=True)
 groupFormat.add_argument("-nhx", "--nhx_Tree", type=str, help="path to the file with nhx-tree")
 groupFormat.add_argument("-nf",'--Newick', type=str,help='path to the file with NEWICK-tree')
