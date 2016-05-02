@@ -208,7 +208,7 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
             command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
             #use declone to compute probs
             output = subprocess.check_output(command, shell=True, cwd=path)
-            tmpfile.close() #tmpfile is closed and immediately deleted
+
             #output is just matrix with probabilities
             #each line of the output should contain max one number greater 0, save for internal nodes
             lines = output.split("\n")
@@ -220,6 +220,7 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
                     probArray = probs.split(" ")
                     probArrayFl = [float(x) for x in probArray]
                     probability = max(probArrayFl, key=float)
+                    #print probability
                     if node in listOfInternalNodes:
                         if not len(species) == 1:
                             if node in adjacenciesPerNode:
@@ -231,7 +232,10 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
         else:
             #ignored adjacencies with only one leaf occuring in
             singleLeafAdj.update({adjacency:species})
-            #print('Single Leaf: '+str(adjacency)+' '+str(species))
+
+
+        tmpfile.close() #tmpfile is closed and immediately deleted
+
     #ignored adjacencies are written into a special file
     f=open(singleLeafAdjOut,'w')
     print('Removed '+str(len(singleLeafAdj))+' Adjacencies occurring just in one external node/leaf')
@@ -250,9 +254,8 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     for node in adjacenciesPerNode:
         for adj_weight in adjacenciesPerNode[node]: #for each adjacency tuple with weight
             file.write('>'+str(node)+'\t') #write the node's name
-            file.write('('+str(adj_weight[0][0])+','+str(adj_weight[0][1])+')') #write the adjacency tuple
-            file.write('\t'+str(adj_weight[1])+'\t') #write the adjacency weight
-            file.write('\n')
+            file.write('('+str(adj_weight[0][0])+','+str(adj_weight[0][1])+')\t') #write the adjacency tuple
+            file.write(str(adj_weight[1])+'\n') #write the adjacency weight
 
     file.close()
     #external leaves

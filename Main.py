@@ -152,29 +152,34 @@ print " "
 
 #TODO: create hash extantAdjacenies from input file weighted_extant_adjacencies
 extantAdjacencies={}
-f=open('./weighted_extant_adjacencies','r')
+f=open(args.extant,'r')
 line=f.readline()
 while line:
     #>species    (AdjL,AdjR)
     spec_adj=line.split('\t')
     species=spec_adj[0][1:]
-    adj=(spec_adj[1][1:],spec_adj[1][:-1])
+    adj_L_R=spec_adj[1].split(',')
+    adj_L=adj_L_R[0][1:].replace("'","")
+    adj_R=adj_L_R[1][:-1].replace("'","")
+    adj=(int(adj_L),int(adj_R))
     if adj in extantAdjacencies:
         new_set=extantAdjacencies[adj]
         new_set.add(species)
         extantAdjacencies[adj]=new_set
     else:
-        extantAdjacencies.update({adj:set(species)})
+        speciesSet=set()
+        speciesSet.add(species)
+        extantAdjacencies.update({adj:speciesSet})
     line=f.readline()
 f.close()
 
 #TODO: create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
 #TODO: create hash AdjacencyProbs from input file weighted_internal_adjacencies
 adjacencyProbs={}
-#Node:(AdjL,AdjR):weight
+#Node:{(AdjL,AdjR):weight}
 nodesPerAdjacency={}
 #(AdjL,AdjR):set(node)
-f=open('./weighted_internal_adjacencies','r')
+f=open(args.internal,'r')
 line=f.readline()
 while line:
     #>species    (AdjL,AdjR)    weight
@@ -198,18 +203,28 @@ while line:
             nodesPerAdjacency.update({adj:spec})
         #filling adjacencyProbs
         if species in adjacencyProbs:
-            new_set_B=adjacencyProbs[species]
-            new_set_B.add( (str(adj) + ':' + str(weight) ) )
-            adjacencyProbs[species]=new_set_B
+            #new_set_B=adjacencyProbs[species]
+            #new_set_B.add( (str(adj) + ':' + str(weight) ) )
+            #adjacencyProbs[species]=new_set_B
+            adjacencyProbs[species][adj] = weight
         else:
-            prob=set()
-            prob.add(str(adj) + ':' + str(weight))
-            adjacencyProbs.update({species:prob })
+            #prob=set()
+            #prob.add(str(adj) + ':' + str(weight))
+            #adjacencyProbs.update({species:prob })
+            adjacencyProbs[species]={adj:weight}
     else:
         print(str(adj)+': '+str(weight)+' ist geringer als '+str(args.x))
     line=f.readline()
 f.close()
 #TOFIX: Something wrong with these hashes->Scaffolding is just skipped. -> reconstructedAdj ist momentan leer
+
+#f=open("./mine_adjacencyProbs_2_mammalian",'w')
+#for species in adjacencyProbs:
+#    for adj in adjacencyProbs[species]:
+#        weight=adjacencyProbs[species][adj]
+#        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
+#f.close()
+
 
 #compute CCs in global adjacency graph
 ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
