@@ -151,17 +151,21 @@ print " "
 #        parser.error('error, no mode given')
 
 #TODO: create hash extantAdjacenies from input file weighted_extant_adjacencies
+
+adjacencyProbs={}
+
 extantAdjacencies={}
 f=open(args.extant,'r')
 line=f.readline()
 while line:
     #>species    (AdjL,AdjR)
-    spec_adj=line.split('\t')
-    species=spec_adj[0][1:]
-    adj_L_R=spec_adj[1].split(',')
+    spec_adj_weight=line.split('\t')
+    species=spec_adj_weight[0][1:]
+    adj_L_R=spec_adj_weight[1].split(',')
     adj_L=adj_L_R[0][1:].replace("'","")
     adj_R=adj_L_R[1][:-1].replace("'","")
     adj=(int(adj_L),int(adj_R))
+    weight=float(spec_adj_weight[2])
     if adj in extantAdjacencies:
         new_set=extantAdjacencies[adj]
         new_set.add(species)
@@ -170,12 +174,17 @@ while line:
         speciesSet=set()
         speciesSet.add(species)
         extantAdjacencies.update({adj:speciesSet})
+
+    #if species in adjacencyProbs:
+    #    adjacencyProbs[species][adj] = weight
+    #else:
+    #   adjacencyProbs[species]={adj:weight}
     line=f.readline()
 f.close()
 
 #TODO: create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
-#TODO: create hash AdjacencyProbs from input file weighted_internal_adjacencies
-adjacencyProbs={}
+#TODO: Fill AdjacencyProbs  with input from file weighted_external_adjacencies
+
 #Node:{(AdjL,AdjR):weight}
 nodesPerAdjacency={}
 #(AdjL,AdjR):set(node)
@@ -218,7 +227,7 @@ while line:
 f.close()
 #TOFIX: Something wrong with these hashes->Scaffolding is just skipped. -> reconstructedAdj ist momentan leer
 
-#f=open("./mine_adjacencyProbs_2_mammalian",'w')
+#f=open("./mine_adjacencyProbs_withExt_pestis",'w')
 #for species in adjacencyProbs:
 #    for adj in adjacencyProbs[species]:
 #        weight=adjacencyProbs[species][adj]

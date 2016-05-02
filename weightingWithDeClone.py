@@ -195,16 +195,22 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print "Compute probabilities with DeClone..."
     adjacenciesPerNode = {}
     singleLeafAdj={}
+    extantWeightedAdjacencies={}
     for adjacency in extantAdjacencies:
         #produce list of extant adjacencies for declone
         path = os.path.dirname(os.path.realpath(__file__))
         tmpfile=tempfile.NamedTemporaryFile(delete=True) #create a temporary named file (appears with a arbitrary name in the directory)
         species = extantAdjacencies[adjacency]
 
+
+
         if len(species)>1: #if an adjacency occurs just in one external leaf, it's ignored (just evolved at this leaf)
             for spec in species:
                 tmpfile.write(spec[0]+" "+spec[0]+"\n")
             tmpfile.seek(0) #go to the beginning of the tmpfile
+            #lines=tmpfile.readlines()
+            #print lines
+            #tmpfile.seek(0)
             command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
             #use declone to compute probs
             output = subprocess.check_output(command, shell=True, cwd=path)
@@ -221,14 +227,21 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
                     probArrayFl = [float(x) for x in probArray]
                     probability = max(probArrayFl, key=float)
                     #print probability
-                    if node in listOfInternalNodes:
-                        if not len(species) == 1:
-                            if node in adjacenciesPerNode:
-                                adjacenciesPerNode[node].add((adjacency,probability))
-                            else:
-                                adjset = set()
-                                adjset.add((adjacency,probability))
-                                adjacenciesPerNode[node] = adjset
+                    if node in listOfInternalNodes: #if node is an internal one
+                        #if not len(species) == 1:
+                        if node in adjacenciesPerNode:
+                            adjacenciesPerNode[node].add((adjacency,probability))
+                        else:
+                            adjset = set()
+                            adjset.add((adjacency,probability))
+                            adjacenciesPerNode[node] = adjset
+                    else: #if node is a leaf
+                        if node in extantWeightedAdjacencies:
+                            extantWeightedAdjacencies[node].add((adjacency,probability))
+                        else:
+                            adjset = set()
+                            adjset.add((adjacency,probability))
+                            extantWeightedAdjacencies[node] = adjset
         else:
             #ignored adjacencies with only one leaf occuring in
             singleLeafAdj.update({adjacency:species})
@@ -254,35 +267,45 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     for node in adjacenciesPerNode:
         for adj_weight in adjacenciesPerNode[node]: #for each adjacency tuple with weight
             file.write('>'+str(node)+'\t') #write the node's name
-            file.write('('+str(adj_weight[0][0])+','+str(adj_weight[0][1])+')\t') #write the adjacency tuple
-            file.write(str(adj_weight[1])+'\n') #write the adjacency weight
+            adj_L=str(adj_weight[0][0])
+            adj_R=str(adj_weight[0][1])
+            weight=str(adj_weight[1])
+            file.write('('+adj_L+','+adj_R+')\t') #write the adjacency tuple
+            file.write(weight+'\n') #write the adjacency weight
 
     file.close()
     #external leaves
-    leaves={}
-    singletempi={}
-    for adj in extantAdjacencies:
-        #print len(extantAdjacencies[adj])
-        if len(extantAdjacencies[adj])>1:#adj occuring in just one leaf are ignored
-            for species in extantAdjacencies[adj]:
-                if species[0] not in leaves:
-                    adj_set=set()
-                    adj_set.add(adj)
-                    leaves.update({species[0]:adj_set})
-                else:
-                    old_set=leaves[species[0]]
-                    old_set.add(adj)
-                    leaves.update({species[0]:old_set})
+    #leaves={}
+    #for adj in extantAdjacencies:
+    #    #print len(extantAdjacencies[adj])
+    #    if len(extantAdjacencies[adj])>1:#adj occuring in just one leaf are ignored
+    #        for species in extantAdjacencies[adj]:
+    #            if species[0] not in leaves:
+    #                adj_set=set()
+    #                adj_set.add(adj)
+    #                leaves.update({species[0]:adj_set})
+    #            else:
+    #                old_set=leaves[species[0]]
+    #                old_set.add(adj)
+    #                leaves.update({species[0]:old_set})
         
     file=open(listOfExtWeightOut, 'w')
-    for leave in leaves:
+    #for leave in leaves:
+    #    for adj in leaves[leave]:
+    #        file.write('>'+str(leave)+'\t')
+    #        #file.write('>'+str(leave[0])+'\t'+str(leave[1])+'\t') #for chromosome informations
+    #        file.write('('+str(adj[0])+','+str(adj[1])+')'+'\t')
+    #        file.write('\n')
 
-        for adj in leaves[leave]:
-            file.write('>'+str(leave)+'\t')
-            #file.write('>'+str(leave[0])+'\t'+str(leave[1])+'\t') #for chromosome informations
-            file.write('('+str(adj[0])+','+str(adj[1])+')'+'\t')
-            file.write('\n')
+    for leaf in extantWeightedAdjacencies:
+        for adj_weight in extantWeightedAdjacencies[leaf]:
+            adj_L=adj_weight[0][0]
+            adj_R=adj_weight[0][1]
+            adj=(int(adj_L),int(adj_R))
+            weight=adj_weight[1]
+            file.write('>'+str(leaf)+'\t'+str(adj)+'\t'+str(weight)+'\n')
     file.close()
+
 #get the internal nodes form the given nhx-treefile
 #   -seperatingChar: either ':', if tree includes weights or '[', if not
 #   -treefile: the path to the treefile
