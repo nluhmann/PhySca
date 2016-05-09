@@ -151,9 +151,9 @@ print " "
 #        parser.error('error, no mode given')
 
 #TODO: create hash extantAdjacenies from input file weighted_extant_adjacencies
-
+threshold=float(args.x)
 adjacencyProbs={}
-
+#Node:{(AdjL,AdjR):weight}
 extantAdjacencies={}
 f=open(args.extant,'r')
 line=f.readline()
@@ -174,18 +174,18 @@ while line:
         speciesSet=set()
         speciesSet.add(species)
         extantAdjacencies.update({adj:speciesSet})
-
-    #if species in adjacencyProbs:
-    #    adjacencyProbs[species][adj] = weight
-    #else:
-    #   adjacencyProbs[species]={adj:weight}
+    #filling adjacency Probs with leaves
+    if weight>threshold:
+        if species in adjacencyProbs:
+            adjacencyProbs[species][adj] = weight
+        else:
+            adjacencyProbs[species]={adj:weight}
     line=f.readline()
 f.close()
 
 #TODO: create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
 #TODO: Fill AdjacencyProbs  with input from file weighted_external_adjacencies
 
-#Node:{(AdjL,AdjR):weight}
 nodesPerAdjacency={}
 #(AdjL,AdjR):set(node)
 f=open(args.internal,'r')
@@ -199,7 +199,7 @@ while line:
     adj_R=int(adj_L_R[1][:-1])
     adj=(adj_L,adj_R)
     weight=float(spec_adj_weight[2])
-    threshold=float(args.x)
+
     if weight > threshold:#filtering all adjacencies with a precomputed weight smaller than the threshold
         #filling nodesPerAdjaceny
         if adj in nodesPerAdjacency:
@@ -210,29 +210,23 @@ while line:
             spec=set()
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
-        #filling adjacencyProbs
+        #filling adjacencyProbs with internal nodes
         if species in adjacencyProbs:
-            #new_set_B=adjacencyProbs[species]
-            #new_set_B.add( (str(adj) + ':' + str(weight) ) )
-            #adjacencyProbs[species]=new_set_B
             adjacencyProbs[species][adj] = weight
         else:
-            #prob=set()
-            #prob.add(str(adj) + ':' + str(weight))
-            #adjacencyProbs.update({species:prob })
             adjacencyProbs[species]={adj:weight}
     else:
         print(str(adj)+': '+str(weight)+' ist geringer als '+str(args.x))
     line=f.readline()
 f.close()
-#TOFIX: Something wrong with these hashes->Scaffolding is just skipped. -> reconstructedAdj ist momentan leer
+#TOFIX: Something wrong with these hashes->adjacencyProbs ist nicht wie es sein sollte
 
-#f=open("./mine_adjacencyProbs_withExt_pestis",'w')
-#for species in adjacencyProbs:
-#    for adj in adjacencyProbs[species]:
-#        weight=adjacencyProbs[species][adj]
-#        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
-#f.close()
+f=open("./mine_adjacencyProbs_withExt_pestis",'w')
+for species in adjacencyProbs:
+    for adj in adjacencyProbs[species]:
+        weight=adjacencyProbs[species][adj]
+        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
+f.close()
 
 
 #compute CCs in global adjacency graph
@@ -245,10 +239,9 @@ validLabels, validAtNode = SR.validLabels(jointLabels,first)
 
 
 
-
 topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
 
-reconstructedAdj = SR.reconstructedAdjacencies(topDown) # reconstructed ADJ is empty!
+reconstructedAdj = SR.reconstructedAdjacencies(topDown)
 SR.outputReconstructedAdjacencies(reconstructedAdj,"reconstructed_adjacencies")
 for node in reconstructedAdj:
     print node

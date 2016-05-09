@@ -254,7 +254,7 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print('Removed '+str(len(singleLeafAdj))+' Adjacencies occurring just in one external node/leaf')
     for adj in singleLeafAdj:
         f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\n')
-        del extantAdjacencies[adj] # remove all to be ignored adj from the hash
+        #del extantAdjacencies[adj] # remove all to be ignored adj from the hash
     f.close()
 
 
