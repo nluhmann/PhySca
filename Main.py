@@ -151,9 +151,7 @@ print " "
 #        parser.error('error, no mode given')
 
 #TODO: create hash extantAdjacenies from input file weighted_extant_adjacencies
-threshold=float(args.x)
-adjacencyProbs={}
-#Node:{(AdjL,AdjR):weight}
+
 extantAdjacencies={}
 f=open(args.extant,'r')
 line=f.readline()
@@ -174,20 +172,17 @@ while line:
         speciesSet=set()
         speciesSet.add(species)
         extantAdjacencies.update({adj:speciesSet})
-    #filling adjacency Probs with leaves
-    if weight>threshold:
-        if species in adjacencyProbs:
-            adjacencyProbs[species][adj] = weight
-        else:
-            adjacencyProbs[species]={adj:weight}
     line=f.readline()
 f.close()
 
 #TODO: create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
-#TODO: Fill AdjacencyProbs  with input from file weighted_external_adjacencies
+#TODO: create adjacencyProbs from input file weighted_internal_adjacencies
 
+threshold=float(args.x)
+adjacencyProbs={}
+# structure Node:{(AdjL,AdjR):weight}
 nodesPerAdjacency={}
-#(AdjL,AdjR):set(node)
+#structure  (AdjL,AdjR):set(node)
 f=open(args.internal,'r')
 line=f.readline()
 while line:
@@ -219,14 +214,13 @@ while line:
         print(str(adj)+': '+str(weight)+' ist geringer als '+str(args.x))
     line=f.readline()
 f.close()
-#TOFIX: Something wrong with these hashes->adjacencyProbs ist nicht wie es sein sollte
 
-f=open("./mine_adjacencyProbs_withExt_pestis",'w')
-for species in adjacencyProbs:
-    for adj in adjacencyProbs[species]:
-        weight=adjacencyProbs[species][adj]
-        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
-f.close()
+#f=open("./mine_adjacencyProbs_pestis",'w')
+#for species in adjacencyProbs:
+#    for adj in adjacencyProbs[species]:
+#        weight=adjacencyProbs[species][adj]
+#        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
+#f.close()
 
 
 #compute CCs in global adjacency graph
