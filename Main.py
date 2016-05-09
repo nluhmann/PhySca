@@ -215,13 +215,24 @@ while line:
     line=f.readline()
 f.close()
 
-#f=open("./mine_adjacencyProbs_pestis",'w')
-#for species in adjacencyProbs:
-#    for adj in adjacencyProbs[species]:
-#        weight=adjacencyProbs[species][adj]
-#        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
-#f.close()
+f=open("./mine_adjacencyProbs_pestis",'w')
+for species in adjacencyProbs:
+    for adj in adjacencyProbs[species]:
+        weight=adjacencyProbs[species][adj]
+        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
+f.close()
 
+f=open("./mine_extantAdj_pestis",'w')
+for adj in extantAdjacencies:
+    for spec in extantAdjacencies[adj]:
+        f.write(str(adj)+'\t'+str(spec)+'\n')
+f.close()
+
+f=open("./mine_nodesPerAdjacency_pestis",'w')
+for adj in nodesPerAdjacency:
+    for spec in nodesPerAdjacency[adj]:
+        f.write(str(adj)+'\t'+str(spec)+'\n')
+f.close()
 
 #compute CCs in global adjacency graph
 ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
