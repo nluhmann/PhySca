@@ -202,32 +202,30 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
         tmpfile=tempfile.NamedTemporaryFile(delete=True) #create a temporary named file (appears with a arbitrary name in the directory)
         species = extantAdjacencies[adjacency]
 
-
-
-        if len(species)>1: #if an adjacency occurs just in one external leaf, it's ignored (just evolved at this leaf)
-            for spec in species:
-                tmpfile.write(spec[0]+" "+spec[0]+"\n")
-            tmpfile.seek(0) #go to the beginning of the tmpfile
-            #lines=tmpfile.readlines()
-            #print lines
-            #tmpfile.seek(0)
-            command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
-            #use declone to compute probs
-            output = subprocess.check_output(command, shell=True, cwd=path)
-
-            #output is just matrix with probabilities
-            #each line of the output should contain max one number greater 0, save for internal nodes
-            lines = output.split("\n")
-            for line in lines:
-                if not line == "" and not line.startswith("\t") and not line.startswith(">"):
-                    node = line.split("\t")[0]  #for each internal node,find the prob for the current adj to be at this node
-                    probs = line.split("\t")[1]
-                    probs = probs.rstrip(" ")
-                    probArray = probs.split(" ")
-                    probArrayFl = [float(x) for x in probArray]
-                    probability = max(probArrayFl, key=float)
-                    #print probability
-                    if node in listOfInternalNodes: #if node is an internal one
+        for spec in species:
+            tmpfile.write(spec[0]+" "+spec[0]+"\n")
+        tmpfile.seek(0) #go to the beginning of the tmpfile
+        #lines=tmpfile.readlines()
+        #print lines
+        #tmpfile.seek(0)
+        command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
+        #use declone to compute probs
+        output = subprocess.check_output(command, shell=True, cwd=path)
+        #output is just matrix with probabilities
+        #each line of the output should contain max one number greater 0, save for internal nodes
+        lines = output.split("\n")
+        for line in lines:
+            if not line == "" and not line.startswith("\t") and not line.startswith(">"):
+                node = line.split("\t")[0]  #for each internal node,find the prob for the current adj to be at this node
+                probs = line.split("\t")[1]
+                probs = probs.rstrip(" ")
+                probArray = probs.split(" ")
+                probArrayFl = [float(x) for x in probArray]
+                probability = max(probArrayFl, key=float)
+                #print probability
+                if node in listOfInternalNodes: #if node is an internal one
+                    if len(species)>1: #if an adjacency occurs just in one external leaf,
+                                       # it's ignored for internal nodes (just evolved at this leaf)
                         #if not len(species) == 1:
                         if node in adjacenciesPerNode:
                             adjacenciesPerNode[node].add((adjacency,probability))
@@ -235,17 +233,16 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
                             adjset = set()
                             adjset.add((adjacency,probability))
                             adjacenciesPerNode[node] = adjset
-                    else: #if node is a leaf
-                        if node in extantWeightedAdjacencies:
-                            extantWeightedAdjacencies[node].add((adjacency,probability))
-                        else:
-                            adjset = set()
-                            adjset.add((adjacency,probability))
-                            extantWeightedAdjacencies[node] = adjset
-        else:
-            #ignored adjacencies with only one leaf occuring in
-            singleLeafAdj.update({adjacency:species})
-
+                    else:
+                            #ignored adjacencies with only one leaf occuring in
+                            singleLeafAdj.update({adjacency:species})
+                else: #if node is a leaf
+                    if node in extantWeightedAdjacencies:
+                        extantWeightedAdjacencies[node].add((adjacency,probability))
+                    else:
+                        adjset = set()
+                        adjset.add((adjacency,probability))
+                        extantWeightedAdjacencies[node] = adjset
 
         tmpfile.close() #tmpfile is closed and immediately deleted
 
@@ -254,7 +251,6 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print('Removed '+str(len(singleLeafAdj))+' Adjacencies occurring just in one external node/leaf')
     for adj in singleLeafAdj:
         f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\n')
-        #del extantAdjacencies[adj] # remove all to be ignored adj from the hash
     f.close()
 
 

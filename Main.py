@@ -151,6 +151,10 @@ print " "
 #        parser.error('error, no mode given')
 
 #TODO: create hash extantAdjacenies from input file weighted_extant_adjacencies
+threshold=float(args.x)
+
+adjacencyProbs={}
+# structure Node:{(AdjL,AdjR):weight}
 
 extantAdjacencies={}
 f=open(args.extant,'r')
@@ -164,23 +168,27 @@ while line:
     adj_R=adj_L_R[1][:-1].replace("'","")
     adj=(int(adj_L),int(adj_R))
     weight=float(spec_adj_weight[2])
-    if adj in extantAdjacencies:
-        new_set=extantAdjacencies[adj]
-        new_set.add(species)
-        extantAdjacencies[adj]=new_set
-    else:
-        speciesSet=set()
-        speciesSet.add(species)
-        extantAdjacencies.update({adj:speciesSet})
+    if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
+        if adj in extantAdjacencies:
+            new_set=extantAdjacencies[adj]
+            new_set.add(species)
+            extantAdjacencies[adj]=new_set
+        else:
+            speciesSet=set()
+            speciesSet.add(species)
+            extantAdjacencies.update({adj:speciesSet})
+        if species in adjacencyProbs:
+            adjacencyProbs[species][adj] = 1.0 #set weight of external adjacencies in adjacencyProbs to 1
+        else:
+            adjacencyProbs[species]={adj:1.0}
     line=f.readline()
 f.close()
 
 #TODO: create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
 #TODO: create adjacencyProbs from input file weighted_internal_adjacencies
 
-threshold=float(args.x)
-adjacencyProbs={}
-# structure Node:{(AdjL,AdjR):weight}
+
+
 nodesPerAdjacency={}
 #structure  (AdjL,AdjR):set(node)
 f=open(args.internal,'r')
