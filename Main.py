@@ -164,9 +164,9 @@ while line:
     spec_adj_weight=line.split('\t')
     species=spec_adj_weight[0][1:]
     adj_L_R=spec_adj_weight[1].split(',')
-    adj_L=adj_L_R[0][1:].replace("'","")
-    adj_R=adj_L_R[1][:-1].replace("'","")
-    adj=(int(adj_L),int(adj_R))
+    adj_L=adj_L_R[0][1:].replace("'","").strip()
+    adj_R=adj_L_R[1][:-1].replace("'","").strip()
+    adj=(adj_L,adj_R)
     weight=float(spec_adj_weight[2])
     if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
         if adj in extantAdjacencies:
@@ -198,9 +198,9 @@ while line:
     spec_adj_weight=line.split('\t')
     species=str(spec_adj_weight[0][1:])
     adj_L_R=spec_adj_weight[1].split(',')
-    adj_L=int(adj_L_R[0][1:])
-    adj_R=int(adj_L_R[1][:-1])
-    adj=(adj_L,adj_R)
+    adj_L=adj_L_R[0][1:]
+    adj_R=adj_L_R[1][:-1]
+    adj=(adj_L.strip(),adj_R.strip())
     weight=float(spec_adj_weight[2])
 
     if weight > threshold:#filtering all adjacencies with a precomputed weight smaller than the threshold
