@@ -205,9 +205,6 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
         for spec in species:
             tmpfile.write(spec[0]+" "+spec[0]+"\n")
         tmpfile.seek(0) #go to the beginning of the tmpfile
-        #lines=tmpfile.readlines()
-        #print lines
-        #tmpfile.seek(0)
         command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
         #use declone to compute probs
         output = subprocess.check_output(command, shell=True, cwd=path)
@@ -226,7 +223,6 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
                 if node in listOfInternalNodes: #if node is an internal one
                     if len(species)>1: #if an adjacency occurs just in one external leaf,
                                        # it's ignored for internal nodes (just evolved at this leaf)
-                        #if not len(species) == 1:
                         if node in adjacenciesPerNode:
                             adjacenciesPerNode[node].add((adjacency,probability))
                         else:
@@ -271,28 +267,7 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
 
     file.close()
     #external leaves
-    #leaves={}
-    #for adj in extantAdjacencies:
-    #    #print len(extantAdjacencies[adj])
-    #    if len(extantAdjacencies[adj])>1:#adj occuring in just one leaf are ignored
-    #        for species in extantAdjacencies[adj]:
-    #            if species[0] not in leaves:
-    #                adj_set=set()
-    #                adj_set.add(adj)
-    #                leaves.update({species[0]:adj_set})
-    #            else:
-    #                old_set=leaves[species[0]]
-    #                old_set.add(adj)
-    #                leaves.update({species[0]:old_set})
-        
     file=open(listOfExtWeightOut, 'w')
-    #for leave in leaves:
-    #    for adj in leaves[leave]:
-    #        file.write('>'+str(leave)+'\t')
-    #        #file.write('>'+str(leave[0])+'\t'+str(leave[1])+'\t') #for chromosome informations
-    #        file.write('('+str(adj[0])+','+str(adj[1])+')'+'\t')
-    #        file.write('\n')
-
     for leaf in extantWeightedAdjacencies:
         for adj_weight in extantWeightedAdjacencies[leaf]:
             adj_L=adj_weight[0][0]
@@ -363,7 +338,6 @@ groupAM.add_argument("-a","--adjacencies",type=str, help="path to adjacency-file
 groupAM.add_argument("-m","--markers",type=str,help="path to marker-file")
 parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
 parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
-#parser.add_argument("-mA","--minNumAdj",type=int,help='minimal number of external nodes an adjacency has to occur to be considered', default=1)
 
 args = parser.parse_args()
 
