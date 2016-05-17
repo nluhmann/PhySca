@@ -62,7 +62,7 @@ while line:
     adj_L_R = spec_adj[1].strip().split(',')
     adj_L=adj_L_R[0][1:].replace("'","")
     adj_R=adj_L_R[1][:-1].replace("'","").strip()
-    adj=(adj_L,adj_R)
+    adj=(int(adj_L),int(adj_R))
     #if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
     if adj in extantAdjacencies:
             new_set=extantAdjacencies[adj]
@@ -101,7 +101,7 @@ while line:
     adj_L_R=spec_adj_weight[1].split(',')
     adj_L=adj_L_R[0][1:]
     adj_R=adj_L_R[1][:-1]
-    adj=(adj_L.strip(),adj_R.strip())
+    adj=(int(adj_L.strip()),int(adj_R.strip()))
     weight=float(spec_adj_weight[2])
 
     if weight > threshold:#filtering all adjacencies with a precomputed weight smaller than the threshold
@@ -209,7 +209,7 @@ for node in undoubled:
     print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
     print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
 
-
+calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
 
 print time.time() - t0, "seconds process time"
 
@@ -250,6 +250,9 @@ if args.sampling:
                 else:
                     markerCounter = markerCounter + len(scaffold)-1
             print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+            #TODO: undoubled MarkerId auzs ExtantAdj rekonstruieren -> Anzahl/Set von MarkerIds
+            #Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
+            #Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
             #if args.marker:
             #    notRec = markerCount - markerCounter
             #else:
