@@ -196,6 +196,15 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     adjacenciesPerNode = {}
     singleLeafAdj={}
     extantWeightedAdjacencies={}
+    for adj in extantAdjacencies:
+        for species in extantAdjacencies[adj]:
+            node=species[0]
+            if node in extantWeightedAdjacencies:
+                extantWeightedAdjacencies[node].add(adj)
+            else:
+                adjset = set()
+                adjset.add(adj)
+                extantWeightedAdjacencies[node] = adjset
     for adjacency in extantAdjacencies:
         #produce list of extant adjacencies for declone
         path = os.path.dirname(os.path.realpath(__file__))
@@ -231,14 +240,14 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
                             adjacenciesPerNode[node] = adjset
                     else:
                             #ignored adjacencies with only one leaf occuring in
-                            singleLeafAdj.update({adjacency:species})
-                else: #if node is a leaf
-                    if node in extantWeightedAdjacencies:
-                        extantWeightedAdjacencies[node].add((adjacency,probability))
-                    else:
-                        adjset = set()
-                        adjset.add((adjacency,probability))
-                        extantWeightedAdjacencies[node] = adjset
+                            singleLeafAdj.update({adjacency:(species[0],probability)})
+                #else: #if node is a leaf
+                #    if node in extantWeightedAdjacencies:
+                #        extantWeightedAdjacencies[node].add((adjacency,probability))
+                #    else:
+                #        adjset = set()
+                #        adjset.add((adjacency,probability))
+                #        extantWeightedAdjacencies[node] = adjset
 
         tmpfile.close() #tmpfile is closed and immediately deleted
 
@@ -246,7 +255,7 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     f=open(singleLeafAdjOut,'w')
     print('Removed '+str(len(singleLeafAdj))+' Adjacencies occurring just in one external node/leaf')
     for adj in singleLeafAdj:
-        f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\n')
+        f.write('('+str(adj[0])+','+str(adj[1])+')'+'\t'+str(singleLeafAdj[adj][0])+'\t'+str(singleLeafAdj[adj][1])+'\n')
     f.close()
 
 
@@ -269,12 +278,14 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     #external leaves
     file=open(listOfExtWeightOut, 'w')
     for leaf in extantWeightedAdjacencies:
-        for adj_weight in extantWeightedAdjacencies[leaf]:
-            adj_L=adj_weight[0][0]
-            adj_R=adj_weight[0][1]
-            adj=(int(adj_L),int(adj_R))
-            weight=adj_weight[1]
-            file.write('>'+str(leaf)+'\t'+str(adj)+'\t'+str(weight)+'\n')
+        #for adj_weight in extantWeightedAdjacencies[leaf]:
+        #    adj_L=adj_weight[0][0]
+        #    adj_R=adj_weight[0][1]
+        #    adj=(int(adj_L),int(adj_R))
+        #    weight=adj_weight[1]
+        for adj in extantWeightedAdjacencies[leaf]:
+            file.write('>' + str(leaf) + '\t' + str(adj) +  '\n')
+        #file.write('>'+str(leaf)+'\t'+str(adj)+'\t'+str(weight)+'\n')
     file.close()
 
 #get the internal nodes form the given nhx-treefile

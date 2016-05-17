@@ -50,33 +50,39 @@ f=open(args.extant,'r')
 line=f.readline()
 while line:
     #>species    (AdjL,AdjR)
-    spec_adj_weight=line.split('\t')
-    species=spec_adj_weight[0][1:]
-    adj_L_R=spec_adj_weight[1].split(',')
-    adj_L=adj_L_R[0][1:].replace("'","").strip()
+    #spec_adj_weight=line.split('\t')
+    #species=spec_adj_weight[0][1:]
+    #adj_L_R=spec_adj_weight[1].split(',')
+    #adj_L=adj_L_R[0][1:].replace("'","").strip()
+    #adj_R=adj_L_R[1][:-1].replace("'","").strip()
+    #adj=(adj_L,adj_R)
+    #weight=float(spec_adj_weight[2])
+    spec_adj=line.split('\t')
+    species=spec_adj[0][1:]
+    adj_L_R = spec_adj[1].strip().split(',')
+    adj_L=adj_L_R[0][1:].replace("'","")
     adj_R=adj_L_R[1][:-1].replace("'","").strip()
     adj=(adj_L,adj_R)
-    weight=float(spec_adj_weight[2])
-    if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
-        if adj in extantAdjacencies:
+    #if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
+    if adj in extantAdjacencies:
             new_set=extantAdjacencies[adj]
             new_set.add(species)
             extantAdjacencies[adj]=new_set
-        else:
+    else:
             speciesSet=set()
             speciesSet.add(species)
             extantAdjacencies.update({adj:speciesSet})
-        if species in extantAdjacencies_species_adj:
+    if species in extantAdjacencies_species_adj:
             new_set=extantAdjacencies_species_adj[species]
             new_set.add(adj)
             extantAdjacencies_species_adj[species]=new_set
-        else:
+    else:
             adj_set=set()
             adj_set.add(adj)
             extantAdjacencies_species_adj[species]=adj_set
-        if species in adjacencyProbs:
+    if species in adjacencyProbs:
             adjacencyProbs[species][adj] = 1.0#set weight of external adjacencies in adjacencyProbs to 1
-        else:
+    else:
             adjacencyProbs[species]={adj:1.0}
     line=f.readline()
 f.close()
@@ -109,14 +115,35 @@ while line:
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
         #filling adjacencyProbs with internal nodes
-        if species in adjacencyProbs:
-            adjacencyProbs[species][adj] = weight
-        else:
-            adjacencyProbs[species]={adj:weight}
     else:
-        print(str(adj)+': '+str(weight)+' ist geringer als '+str(args.x))
+        print(str(adj) + ': ' + str(weight) + ' ist geringer als ' + str(args.x))
+    if species in adjacencyProbs:
+            adjacencyProbs[species][adj] = weight
+    else:
+            adjacencyProbs[species]={adj:weight}
+
     line=f.readline()
 f.close()
+
+
+
+
+#f=open('single_leaf_adjacencies','r')
+#line=f.readline()
+#while line:
+#    adj_spec_weight=line.split('\t')
+#    adj=adj_spec_weight[0].split(',')
+#    adj_L=adj[0][1:]
+#    adj_R=adj[1][:-1]
+#    adj=(adj_L,adj_R)
+#    species=adj_spec_weight[1].split(',')[0][1:].replace("'","")
+#    weight=float(adj_spec_weight[2])
+#    if species in adjacencyProbs:
+#        adjacencyProbs[species][adj] = weight
+#    else:
+#        adjacencyProbs[species] = {adj: weight}
+#    line=f.readline()
+#f.close()
 
 f=open("./mine_adjacencyProbs_pestis",'w')
 for species in adjacencyProbs:
