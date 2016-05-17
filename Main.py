@@ -145,20 +145,20 @@ f.close()
 #    line=f.readline()
 #f.close()
 
-f=open("./mine_adjacencyProbs_pestis",'w')
+f=open("./mine_adjacencyProbs_mammalian",'w')
 for species in adjacencyProbs:
     for adj in adjacencyProbs[species]:
         weight=adjacencyProbs[species][adj]
         f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
 f.close()
 
-f=open("./mine_extantAdj_pestis",'w')
+f=open("./mine_extantAdj_mammalian",'w')
 for adj in extantAdjacencies:
     for spec in extantAdjacencies[adj]:
         f.write(str(adj)+'\t'+str(spec)+'\n')
 f.close()
 
-f=open("./mine_nodesPerAdjacency_pestis",'w')
+f=open("./mine_nodesPerAdjacency_mammalian",'w')
 for adj in nodesPerAdjacency:
     for spec in nodesPerAdjacency[adj]:
         f.write(str(adj)+'\t'+str(spec)+'\n')
@@ -190,6 +190,20 @@ scaffolding.outputUndoubledScaffolds(undoubled,"undoubled_scaffolds")
 scaffolding.outputScaffolds(scaffolds,"doubled_scaffolds")
 scaffolding.sanityCheckScaffolding(undoubled)
 
+# reconstruct marker pairs out of extantAdjacencies
+# this just needs to be done one time, because the sampling doesn't afflict extantAdj
+reconstructedMarker = set()
+for adj in extantAdjacencies:
+    #each adjacency equals to markerpairs
+    adj_list=[ adj[0], adj[1] ]
+    for adjpart in adj_list:
+        if (adjpart % 2 ==0):
+            markerId=adjpart/2
+        else:
+            markerId=(adjpart+1)/2
+        reconstructedMarker.add(markerId)
+
+
 for node in undoubled:
     print node
     markerCounter = 0
@@ -201,13 +215,21 @@ for node in undoubled:
         else:
             markerCounter = markerCounter + len(scaffold)-1
     print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
-    #if args.marker:
+    # number of reconstructed markerIds
+    reconstructedMarkerCount = len(reconstructedMarker)
+    # singleton scaffolds number / number of not reconstructed marker
+    notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
+    # Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
+    # number of all scaffolds
+    allScaffoldCount = markerCounter + notReconstructedMarkerCount
+    # Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
+    # if args.marker:
     #    notRec = markerCount - markerCounter
-    #else:
+    # else:
     #    notRec = 2207 - markerCounter
-    notRec = 2207 - markerCounter
-    print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
-    print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
+    # notRec = 2207 - markerCounter
+    print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
+    print node + " number of scaffolds: " + str(allScaffoldCount)
 
 calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
 
@@ -250,16 +272,21 @@ if args.sampling:
                 else:
                     markerCounter = markerCounter + len(scaffold)-1
             print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
-            #TODO: undoubled MarkerId auzs ExtantAdj rekonstruieren -> Anzahl/Set von MarkerIds
+            #number of reconstructed markerIds
+            reconstructedMarkerCount=len(reconstructedMarker)
+            #singleton scaffolds number / number of not reconstructed marker
+            notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
             #Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
+            #number of all scaffolds
+            allScaffoldCount=markerCounter + notReconstructedMarkerCount
             #Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
             #if args.marker:
             #    notRec = markerCount - markerCounter
             #else:
             #    notRec = 2207 - markerCounter
-            notRec = 2207 - markerCounter
-            print node+" number of singleton scaffolds (not reconstructed marker): "+str(notRec)
-            print node+" number of scaffolds: "+str(len(undoubled[node])+notRec)
+            #notRec = 2207 - markerCounter
+            print node+" number of singleton scaffolds (not reconstructed marker): "+str(notReconstructedMarkerCount)
+            print node+" number of scaffolds: "+str(allScaffoldCount)
         print time.time() - t1, "seconds process time"
         
         calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
