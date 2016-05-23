@@ -8,6 +8,9 @@ import argparse
 import time
 
 from calculate_SCJ import calculate_SCJ
+#global variable
+scj_path='./SCJ_distances'
+statistic_path='./statisitc_allSampled_ReconstructedAdjacencies'
 
 parser = argparse.ArgumentParser(description="PhySca")
 parser.add_argument("-tree", type=str, help="tree file in newick or nhx format")
@@ -50,13 +53,6 @@ f=open(args.extant,'r')
 line=f.readline()
 while line:
     #>species    (AdjL,AdjR)
-    #spec_adj_weight=line.split('\t')
-    #species=spec_adj_weight[0][1:]
-    #adj_L_R=spec_adj_weight[1].split(',')
-    #adj_L=adj_L_R[0][1:].replace("'","").strip()
-    #adj_R=adj_L_R[1][:-1].replace("'","").strip()
-    #adj=(adj_L,adj_R)
-    #weight=float(spec_adj_weight[2])
     spec_adj=line.split('\t')
     species=spec_adj[0][1:]
     adj_L_R = spec_adj[1].strip().split(',')
@@ -115,8 +111,8 @@ while line:
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
         #filling adjacencyProbs with internal nodes
-    else:
-        print(str(adj) + ': ' + str(weight) + ' ist geringer als ' + str(args.x))
+    #else:
+    #    print(str(adj) + ': ' + str(weight) + ' ist geringer als ' + str(args.x))
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
     else:
@@ -124,26 +120,6 @@ while line:
 
     line=f.readline()
 f.close()
-
-
-
-
-#f=open('single_leaf_adjacencies','r')
-#line=f.readline()
-#while line:
-#    adj_spec_weight=line.split('\t')
-#    adj=adj_spec_weight[0].split(',')
-#    adj_L=adj[0][1:]
-#    adj_R=adj[1][:-1]
-#    adj=(adj_L,adj_R)
-#    species=adj_spec_weight[1].split(',')[0][1:].replace("'","")
-#    weight=float(adj_spec_weight[2])
-#    if species in adjacencyProbs:
-#        adjacencyProbs[species][adj] = weight
-#    else:
-#        adjacencyProbs[species] = {adj: weight}
-#    line=f.readline()
-#f.close()
 
 f=open("./mine_adjacencyProbs_mammalian",'w')
 for species in adjacencyProbs:
@@ -204,6 +180,7 @@ for adj in extantAdjacencies:
         reconstructedMarker.add(markerId)
 
 
+
 for node in undoubled:
     print node
     markerCounter = 0
@@ -231,12 +208,18 @@ for node in undoubled:
     print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
     print node + " number of scaffolds: " + str(allScaffoldCount)
 
-calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+#dictionary for all scj distances
+dict_SCJ={}
 
+#calculate SCJ-distance for unsampled solution
+scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+dict_SCJ.update({'Unsampled':scj_unsampled})
 print time.time() - t0, "seconds process time"
 
 
-
+#dictionary for statistics of reconstructed Adjacencies
+#structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
+allSampleReconstructionStatistic={}
 
 if args.sampling:
     print "SAMPLING"
@@ -253,7 +236,17 @@ if args.sampling:
             print node
             print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
 
-
+            for adjacency in reconstructedAdj[node]:
+                if node in allSampleReconstructionStatistic:
+                    print allSampleReconstructionStatistic[node]
+                    if adjacency in allSampleReconstructionStatistic[node]:
+                        allSampleReconstructionStatistic[node][adjacency] += 1
+                    else:
+                        dict_adj = {adjacency: 1}
+                        allSampleReconstructionStatistic[node].update(dict_adj)
+                        #print allSampleReconstructionStatistic[node][adjacency]
+                else:
+                    allSampleReconstructionStatistic.update({node:{adjacency:1}})
 
         scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
         undoubled = scaffolding.undoubleScaffolds(scaffolds)
@@ -289,9 +282,22 @@ if args.sampling:
             print node+" number of scaffolds: "+str(allScaffoldCount)
         print time.time() - t1, "seconds process time"
         
-        calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
-        
-        
+        scj=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+        dict_SCJ.update({'Sample_'+str(i):scj})
 
+#write all SCJ distances to output file
+f=open(scj_path,'w')
+for sample in dict_SCJ:
+    f.write('>'+str(sample)+'\t'+str(dict_SCJ[sample])+'\n')
+f.close()
 
+#write statistic about reconstructed adjacencies to output file
+
+f=open(statistic_path,'w')
+f.write('>Header:'+'\t'+str(args.sampling)+'\n')
+for node in allSampleReconstructionStatistic:
+    for adj in allSampleReconstructionStatistic[node]:
+        number=allSampleReconstructionStatistic[node][adj]
+        f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+f.close()
 

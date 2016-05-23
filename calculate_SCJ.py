@@ -14,6 +14,7 @@ def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj):
             set_of_node_adj=set(extantAdjacencies_species_adj[node.name]) #... get the adjacencies from extantAdjacencies_species_adj
         else:
             print "ERROR: The species' name wasn't found"
+
         #for each parent node of the current node get the set of adjs
         set_of_nodes_parent_adj=set()
         if node.up.name in reconstructedAdj: # if the parent of the current node is an internal node...
@@ -46,3 +47,4 @@ def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj):
         #print 'temp: '+str(temp)
         scj_dist+= temp
     print "Single-Cut-or-Join-Distance: "+str(scj_dist)
+    return scj_dist
