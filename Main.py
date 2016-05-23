@@ -8,6 +8,7 @@ import argparse
 import time
 
 from calculate_SCJ import calculate_SCJ
+
 #global variable
 scj_path='./SCJ_distances'
 statistic_path='./statisitc_allSampled_ReconstructedAdjacencies'
@@ -121,25 +122,6 @@ while line:
     line=f.readline()
 f.close()
 
-f=open("./mine_adjacencyProbs_mammalian",'w')
-for species in adjacencyProbs:
-    for adj in adjacencyProbs[species]:
-        weight=adjacencyProbs[species][adj]
-        f.write(str(species)+'\t'+str(adj)+'\t'+str(weight)+'\n')
-f.close()
-
-f=open("./mine_extantAdj_mammalian",'w')
-for adj in extantAdjacencies:
-    for spec in extantAdjacencies[adj]:
-        f.write(str(adj)+'\t'+str(spec)+'\n')
-f.close()
-
-f=open("./mine_nodesPerAdjacency_mammalian",'w')
-for adj in nodesPerAdjacency:
-    for spec in nodesPerAdjacency[adj]:
-        f.write(str(adj)+'\t'+str(spec)+'\n')
-f.close()
-
 #compute CCs in global adjacency graph
 ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
 conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
@@ -148,8 +130,6 @@ globalAdjacencyGraph.outputConflicts(conflicts,"conflicts")
 jointLabels, first = SR.enumJointLabelings(ccs)
 validLabels, validAtNode = SR.validLabels(jointLabels,first)
 
-
-
 topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
 
 reconstructedAdj = SR.reconstructedAdjacencies(topDown)
@@ -157,8 +137,6 @@ SR.outputReconstructedAdjacencies(reconstructedAdj,"reconstructed_adjacencies")
 for node in reconstructedAdj:
     print node
     print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
-
-
 
 scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
 undoubled = scaffolding.undoubleScaffolds(scaffolds)
@@ -200,11 +178,6 @@ for node in undoubled:
     # number of all scaffolds
     allScaffoldCount = markerCounter + notReconstructedMarkerCount
     # Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
-    # if args.marker:
-    #    notRec = markerCount - markerCounter
-    # else:
-    #    notRec = 2207 - markerCounter
-    # notRec = 2207 - markerCounter
     print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
     print node + " number of scaffolds: " + str(allScaffoldCount)
 
@@ -235,10 +208,10 @@ if args.sampling:
         for node in reconstructedAdj:
             print node
             print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
-
+            # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
             for adjacency in reconstructedAdj[node]:
                 if node in allSampleReconstructionStatistic:
-                    print allSampleReconstructionStatistic[node]
+                    #print allSampleReconstructionStatistic[node]
                     if adjacency in allSampleReconstructionStatistic[node]:
                         allSampleReconstructionStatistic[node][adjacency] += 1
                     else:
@@ -273,11 +246,6 @@ if args.sampling:
             #number of all scaffolds
             allScaffoldCount=markerCounter + notReconstructedMarkerCount
             #Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
-            #if args.marker:
-            #    notRec = markerCount - markerCounter
-            #else:
-            #    notRec = 2207 - markerCounter
-            #notRec = 2207 - markerCounter
             print node+" number of singleton scaffolds (not reconstructed marker): "+str(notReconstructedMarkerCount)
             print node+" number of scaffolds: "+str(allScaffoldCount)
         print time.time() - t1, "seconds process time"
