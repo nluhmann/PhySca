@@ -49,7 +49,7 @@ extantAdjacencies={}
 extantAdjacencies_species_adj={}
 #structure {node:set([(AdjL,AdjR),..]),..}
 
-#structure
+#fill dictionaries with input from weighted_extant_adjacencies
 f=open(args.extant,'r')
 line=f.readline()
 while line:
@@ -112,8 +112,6 @@ while line:
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
         #filling adjacencyProbs with internal nodes
-    #else:
-    #    print(str(adj) + ': ' + str(weight) + ' ist geringer als ' + str(args.x))
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
     else:
@@ -145,7 +143,7 @@ scaffolding.outputScaffolds(scaffolds,"doubled_scaffolds")
 scaffolding.sanityCheckScaffolding(undoubled)
 
 # reconstruct marker pairs out of extantAdjacencies
-# this just needs to be done one time, because the sampling doesn't afflict extantAdj
+# this just needs to be done one time, because the sampling doesn't effect extantAdj
 reconstructedMarker = set()
 for adj in extantAdjacencies:
     #each adjacency equals to markerpairs
@@ -174,10 +172,8 @@ for node in undoubled:
     reconstructedMarkerCount = len(reconstructedMarker)
     # singleton scaffolds number / number of not reconstructed marker
     notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-    # Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
     # number of all scaffolds
     allScaffoldCount = markerCounter + notReconstructedMarkerCount
-    # Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
     print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
     print node + " number of scaffolds: " + str(allScaffoldCount)
 
@@ -211,13 +207,11 @@ if args.sampling:
             # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
             for adjacency in reconstructedAdj[node]:
                 if node in allSampleReconstructionStatistic:
-                    #print allSampleReconstructionStatistic[node]
                     if adjacency in allSampleReconstructionStatistic[node]:
                         allSampleReconstructionStatistic[node][adjacency] += 1
                     else:
                         dict_adj = {adjacency: 1}
                         allSampleReconstructionStatistic[node].update(dict_adj)
-                        #print allSampleReconstructionStatistic[node][adjacency]
                 else:
                     allSampleReconstructionStatistic.update({node:{adjacency:1}})
 
@@ -242,10 +236,8 @@ if args.sampling:
             reconstructedMarkerCount=len(reconstructedMarker)
             #singleton scaffolds number / number of not reconstructed marker
             notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-            #Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
             #number of all scaffolds
             allScaffoldCount=markerCounter + notReconstructedMarkerCount
-            #Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
             print node+" number of singleton scaffolds (not reconstructed marker): "+str(notReconstructedMarkerCount)
             print node+" number of scaffolds: "+str(allScaffoldCount)
         print time.time() - t1, "seconds process time"
