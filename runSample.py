@@ -26,16 +26,20 @@ def runSample(lock, ccs, tree, extantAdjacencies, adjacencyProbs, alpha, i,
         print "Number of reconstructed adjacencies: " + str(len(reconstructedAdj[node]))
         # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
         for adjacency in reconstructedAdj[node]:
-            if node in allSampleReconstructionStatistic:
-                # print allSampleReconstructionStatistic[node]
-                if adjacency in allSampleReconstructionStatistic[node]:
-                    allSampleReconstructionStatistic[node][adjacency] += 1
-                else:
-                    dict_adj = {adjacency: 1}
-                    allSampleReconstructionStatistic[node].update(dict_adj)
-                    # print allSampleReconstructionStatistic[node][adjacency]
+            #if node in allSampleReconstructionStatistic:
+            #    # print allSampleReconstructionStatistic[node]
+            #    if adjacency in allSampleReconstructionStatistic[node]:
+            #        allSampleReconstructionStatistic[node][adjacency] += 1
+            #    else:
+            #        dict_adj = {adjacency: 1}
+            #        allSampleReconstructionStatistic[node].update(dict_adj)
+            #        # print allSampleReconstructionStatistic[node][adjacency]
+            #else:
+            #    allSampleReconstructionStatistic.update({node: {adjacency: 1}})
+            if (node,adjacency) in allSampleReconstructionStatistic:
+                allSampleReconstructionStatistic[(node,adjacency)] += 1
             else:
-                allSampleReconstructionStatistic.update({node: {adjacency: 1}})
+                allSampleReconstructionStatistic.update({(node,adjacency):1})
 
     scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
     undoubled = scaffolding.undoubleScaffolds(scaffolds)

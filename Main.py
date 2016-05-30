@@ -226,9 +226,14 @@ f.close()
 
 f=open(statistic_path,'w')
 f.write('>Header:'+'\t'+str(args.sampling)+'\n')
-for node in allSampleReconstructionStatistic:
-    for adj in allSampleReconstructionStatistic[node]:
-        number=allSampleReconstructionStatistic[node][adj]
-        f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+for node_adj in sorted(allSampleReconstructionStatistic.keys()):
+    node=node_adj[0]
+    adj=node_adj[1]
+    number=allSampleReconstructionStatistic[node_adj]
+    f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+#for node in allSampleReconstructionStatistic:
+#    for adj in allSampleReconstructionStatistic[node]:
+#        number=allSampleReconstructionStatistic[node][adj]
+#        f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
 f.close()
-
+print time.time() - t0, "seconds process time"
