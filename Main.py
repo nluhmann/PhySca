@@ -11,7 +11,7 @@ from calculate_SCJ import calculate_SCJ
 
 #global variable
 scj_path='./SCJ_distances'
-statistic_path='./statisitc_allSampled_ReconstructedAdjacencies'
+statistic_path='./statistic_allSampled_ReconstructedAdjacencies'
 
 parser = argparse.ArgumentParser(description="PhySca")
 parser.add_argument("-tree", type=str, help="tree file in newick or nhx format")
