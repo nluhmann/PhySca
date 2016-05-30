@@ -208,8 +208,8 @@ if args.sampling and  __name__ == '__main__':
         p=multiprocessing.Process(target=runSample,
                                 args=(lock,ccs, tree, extantAdjacencies, adjacencyProbs,
                                       args.alpha, i, extantAdjacencies_species_adj, reconstructedMarkerCount,tempRS,tempSCJ))
-        p.start()
-        p.join()
+        p.start() # start this process
+        p.join() # wait for this process
     allSampleReconstructionStatistic=dict(tempRS)
     dict_SCJ=dict(tempSCJ)
 

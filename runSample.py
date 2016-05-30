@@ -12,15 +12,17 @@ import multiprocessing
 def runSample(lock, ccs, tree, extantAdjacencies, adjacencyProbs, alpha, i,
               extantAdjacencies_species_adj, reconstructedMarkerCount, allSampleReconstructionStatistic,dict_SCJ):
     t1 = time.time()
-    lock.acquire()
+
     jointLabels, first = SR.enumJointLabelings(ccs)
     validLabels, validAtNode = SR.validLabels(jointLabels, first)
 
     print "###################### " + str(i) + " ######################"
-
+    lock.acquire()
     topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha)
+    lock.release()
     reconstructedAdj = SR.reconstructedAdjacencies(topDown)
     SR.outputReconstructedAdjacencies(reconstructedAdj, "reconstructed_adjacencies_" + str(i))
+    lock.acquire()
     for node in reconstructedAdj:
         print node
         print "Number of reconstructed adjacencies: " + str(len(reconstructedAdj[node]))
@@ -40,7 +42,7 @@ def runSample(lock, ccs, tree, extantAdjacencies, adjacencyProbs, alpha, i,
                 allSampleReconstructionStatistic[(node,adjacency)] += 1
             else:
                 allSampleReconstructionStatistic.update({(node,adjacency):1})
-
+    lock.release()
     scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
     undoubled = scaffolding.undoubleScaffolds(scaffolds)
     scaffolding.outputUndoubledScaffolds(undoubled, "undoubled_scaffolds_" + str(i))
@@ -70,7 +72,7 @@ def runSample(lock, ccs, tree, extantAdjacencies, adjacencyProbs, alpha, i,
             notReconstructedMarkerCount)
         print node + " number of scaffolds: " + str(allScaffoldCount)
     print time.time() - t1, "seconds process time"
-
+    lock.acquire()
     scj = calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
     dict_SCJ.update({'Sample_' + str(i): scj})
     lock.release()
