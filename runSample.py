@@ -62,7 +62,10 @@ def runSample(params):
         return (allSampleReconstructionStatistic,dict_SCJ)
 
 def sample(ccs, tree, extantAdjacencies, adjacencyProbs,alpha,sampling, samplesize,extantAdjacencies_species_adj):
-    controlTree=tree
+    cpuCount=multiprocessing.cpu_count()
+    if samplesize > cpuCount:
+        samplesize=cpuCount
+    print "Using "+str(samplesize)+" parallel processes for sampling."
     pool = multiprocessing.Pool(processes=samplesize)
     tasks=(( ccs, tree,extantAdjacencies, adjacencyProbs, alpha, i,
               extantAdjacencies_species_adj) for i in range(0,sampling))
@@ -74,10 +77,7 @@ def sample(ccs, tree, extantAdjacencies, adjacencyProbs,alpha,sampling, samplesi
 
     allSampleReconstructionStatistic={}
     dict_SCJ={}
-    if tree==controlTree:
-        print "Tree untouched!"
-    else:
-        print "------Tree Changed-------"
+
     for tuple in output:
         tempRS = tuple[0]
         tempSCJ = tuple[1]

@@ -197,9 +197,9 @@ print time.time() - t0, "seconds process time"
 #structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
 allSampleReconstructionStatistic={}
 
-if args.sampling:# and  __name__ == '__main__':
+if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
-    samplesize=3
+    samplesize=5
     #general sampling method
     allSampleReconstructionStatistic, dict_SCJ=runSample.sample(ccs, tree, extantAdjacencies, adjacencyProbs,args.alpha,
                                                                        args.sampling, samplesize,  extantAdjacencies_species_adj)
