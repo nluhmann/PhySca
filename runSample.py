@@ -9,71 +9,84 @@ import time
 from calculate_SCJ import calculate_SCJ
 import multiprocessing
 
-def runSample(lock, ccs, tree, extantAdjacencies, adjacencyProbs, alpha, i,
-              extantAdjacencies_species_adj, reconstructedMarkerCount, allSampleReconstructionStatistic,dict_SCJ):
-    t1 = time.time()
+def runSample(params):
+        ccs=params[0]
+        tree=params[1]
+        extantAdjacencies=params[2]
+        adjacencyProbs=params[3]
+        alpha=params[4]
+        i=params[5]
+        extantAdjacencies_species_adj=params[6]
+        allSampleReconstructionStatistic={}
+        dict_SCJ={}
+        lock = multiprocessing.Lock()
 
-    jointLabels, first = SR.enumJointLabelings(ccs)
-    validLabels, validAtNode = SR.validLabels(jointLabels, first)
+        jointLabels, first = SR.enumJointLabelings(ccs)
+        validLabels, validAtNode = SR.validLabels(jointLabels, first)
 
-    print "###################### " + str(i) + " ######################"
-    lock.acquire()
-    topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha)
-    lock.release()
-    reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-    SR.outputReconstructedAdjacencies(reconstructedAdj, "reconstructed_adjacencies_" + str(i))
-    lock.acquire()
-    for node in reconstructedAdj:
-        print node
-        print "Number of reconstructed adjacencies: " + str(len(reconstructedAdj[node]))
-        # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
-        for adjacency in reconstructedAdj[node]:
-            #if node in allSampleReconstructionStatistic:
-            #    # print allSampleReconstructionStatistic[node]
-            #    if adjacency in allSampleReconstructionStatistic[node]:
-            #        allSampleReconstructionStatistic[node][adjacency] += 1
-            #    else:
-            #        dict_adj = {adjacency: 1}
-            #        allSampleReconstructionStatistic[node].update(dict_adj)
-            #        # print allSampleReconstructionStatistic[node][adjacency]
-            #else:
-            #    allSampleReconstructionStatistic.update({node: {adjacency: 1}})
-            if (node,adjacency) in allSampleReconstructionStatistic:
-                allSampleReconstructionStatistic[(node,adjacency)] += 1
+        lock.acquire()
+        topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha)
+        lock.release()
+        reconstructedAdj = SR.reconstructedAdjacencies(topDown)
+        SR.outputReconstructedAdjacencies(reconstructedAdj, "reconstructed_adjacencies_" + str(i))
+
+        for node in reconstructedAdj:
+            # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
+            for adjacency in reconstructedAdj[node]:
+                #if node in allSampleReconstructionStatistic:
+                #    # print allSampleReconstructionStatistic[node]
+                #    if adjacency in allSampleReconstructionStatistic[node]:
+                #        allSampleReconstructionStatistic[node][adjacency] += 1
+                #    else:
+                #        dict_adj = {adjacency: 1}
+                #        allSampleReconstructionStatistic[node].update(dict_adj)
+                #        # print allSampleReconstructionStatistic[node][adjacency]
+                #else:
+                #    allSampleReconstructionStatistic.update({node: {adjacency: 1}})
+                lock.acquire()
+                if (node,adjacency) in allSampleReconstructionStatistic:
+                    allSampleReconstructionStatistic[(node,adjacency)] += 1
+                else:
+                    allSampleReconstructionStatistic.update({(node,adjacency):1})
+                lock.release()
+        scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
+        undoubled = scaffolding.undoubleScaffolds(scaffolds)
+        scaffolding.outputUndoubledScaffolds(undoubled, "undoubled_scaffolds_" + str(i))
+        scaffolding.outputScaffolds(scaffolds, "doubled_scaffolds_" + str(i))
+        scaffolding.sanityCheckScaffolding(undoubled)
+
+        lock.acquire()
+        scj = calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+        dict_SCJ.update({'Sample_' + str(i): scj})
+        lock.release()
+        return (allSampleReconstructionStatistic,dict_SCJ)
+
+def sample(ccs, tree, extantAdjacencies, adjacencyProbs,alpha,sampling, samplesize,extantAdjacencies_species_adj):
+    controlTree=tree
+    pool = multiprocessing.Pool(processes=samplesize)
+    tasks=(( ccs, tree,extantAdjacencies, adjacencyProbs, alpha, i,
+              extantAdjacencies_species_adj) for i in range(0,sampling))
+    results=pool.map_async(runSample, tasks)
+    pool.close()
+    pool.join()
+    output=results.get()
+
+
+    allSampleReconstructionStatistic={}
+    dict_SCJ={}
+    if tree==controlTree:
+        print "Tree untouched!"
+    else:
+        print "------Tree Changed-------"
+    for tuple in output:
+        tempRS = tuple[0]
+        tempSCJ = tuple[1]
+        for key in tempRS:
+            if key in allSampleReconstructionStatistic:
+                allSampleReconstructionStatistic[key] +=tempRS[key]
             else:
-                allSampleReconstructionStatistic.update({(node,adjacency):1})
-    lock.release()
-    scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
-    undoubled = scaffolding.undoubleScaffolds(scaffolds)
-    scaffolding.outputUndoubledScaffolds(undoubled, "undoubled_scaffolds_" + str(i))
-    scaffolding.outputScaffolds(scaffolds, "doubled_scaffolds_" + str(i))
-    scaffolding.sanityCheckScaffolding(undoubled)
+                allSampleReconstructionStatistic.update({key:tempRS[key]})
+        for key in tempSCJ:
+            dict_SCJ[key]=tempSCJ[key]
 
-    for node in undoubled:
-        print node
-        markerCounter = 0
-        for scaffold in undoubled[node]:
-            first = scaffold[0]
-            last = scaffold[-1]
-            if not first == last:
-                markerCounter = markerCounter + len(scaffold)
-            else:
-                markerCounter = markerCounter + len(scaffold) - 1
-        print node + " number of reconstructed undoubled marker in scaffolds: " + str(markerCounter)
-        # number of reconstructed markerIds
-        #reconstructedMarkerCount = len(reconstructedMarker)
-        # singleton scaffolds number / number of not reconstructed marker
-        notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-        # Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
-        # number of all scaffolds
-        allScaffoldCount = markerCounter + notReconstructedMarkerCount
-        # Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
-        print node + " number of singleton scaffolds (not reconstructed marker): " + str(
-            notReconstructedMarkerCount)
-        print node + " number of scaffolds: " + str(allScaffoldCount)
-    print time.time() - t1, "seconds process time"
-    lock.acquire()
-    scj = calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
-    dict_SCJ.update({'Sample_' + str(i): scj})
-    lock.release()
-    #return reconstructedAdj, scj
+    return allSampleReconstructionStatistic, dict_SCJ

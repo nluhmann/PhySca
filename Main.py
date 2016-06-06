@@ -8,13 +8,12 @@ import argparse
 import time
 
 from calculate_SCJ import calculate_SCJ
-from runSample import runSample
-import multiprocessing
-import multiprocessing.sharedctypes
-import ctypes
+import runSample_thread
+import runSample
+
 #global variable
 scj_path='./SCJ_distances'
-statistic_path='./statisitc_allSampled_ReconstructedAdjacencies'
+statistic_path='./statistic_allSampled_ReconstructedAdjacencies'
 
 parser = argparse.ArgumentParser(description="PhySca")
 parser.add_argument("-tree", type=str, help="tree file in newick or nhx format")
@@ -23,6 +22,7 @@ parser.add_argument("-extant",type=str,help="file with precomputed weighted adja
 parser.add_argument("-internal",type=str,help="file with precomputed weighted adjacencies for internal nodes")
 parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
+#parser.add_argument("-sg", "--sampling_group", type=int, help="sample X solutions for given set of parameters")
 args = parser.parse_args()
 
 t0 = time.time()
@@ -197,22 +197,12 @@ print time.time() - t0, "seconds process time"
 #structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
 allSampleReconstructionStatistic={}
 
-if args.sampling and  __name__ == '__main__':
+if args.sampling:# and  __name__ == '__main__':
     print "SAMPLING"
-    lock = multiprocessing.Lock()
-    manager=multiprocessing.Manager()
-
-    tempRS=manager.dict()
-    tempSCJ=manager.dict()
-    for i in range(0, args.sampling):
-        p=multiprocessing.Process(target=runSample,
-                                args=(lock,ccs, tree, extantAdjacencies, adjacencyProbs,
-                                      args.alpha, i, extantAdjacencies_species_adj, reconstructedMarkerCount,tempRS,tempSCJ))
-        p.start() # start this process
-        p.join() # wait for this process
-    allSampleReconstructionStatistic=dict(tempRS)
-    dict_SCJ=dict(tempSCJ)
-
+    samplesize=3
+    #general sampling method
+    allSampleReconstructionStatistic, dict_SCJ=runSample.sample(ccs, tree, extantAdjacencies, adjacencyProbs,args.alpha,
+                                                                       args.sampling, samplesize,  extantAdjacencies_species_adj)
 
 dict_SCJ.update({'Unsampled':scj_unsampled})
 
