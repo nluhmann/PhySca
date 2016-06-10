@@ -40,10 +40,10 @@ def createGraph(extant,ancestral):
     complex = 7 * math.pow(numberOfLabels,2)
     print "Number of Labels: "+str(numberOfLabels)
     print "Complexity: "+str(complex)
-    # if len(graphs) > 10:
-    #     for i in range(0,10):
-    #         #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
-    #         print str(nx.number_of_edges(graphs[i]))
+    if len(graphs) > 10:
+        for i in range(0,10):
+            #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
+            print str(nx.number_of_edges(graphs[i]))
     return graphs
 
 
