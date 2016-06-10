@@ -2,7 +2,7 @@ import sys,os,subprocess,tempfile
 import argparse
 #from ete2 import Tree
 
-
+  
 #convert NEWICK tree notation with weights into nhx notation
 #parameter: file - the path to the file with the tree in NEWICK-notation
 #           ignore_weights - boolean, if the parsed nhx-tree shall include weights or not
@@ -188,6 +188,7 @@ def findAdjacencies(speciesHash):
 
 def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print "Compute probabilities with DeClone..."
+    locateDeClone = os.path.dirname(sys.argv[0]) 
     adjacenciesPerNode = {}
     singleLeafAdj={}
     extantWeightedAdjacencies={}
@@ -209,9 +210,9 @@ def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
         for spec in species:
             tmpfile.write(spec[0]+" "+spec[0]+"\n")
         tmpfile.seek(0) #go to the beginning of the tmpfile
-        command = './DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
+        command = locateDeClone+'/DeClone -t1 '+treefile+' -t2 '+treefile+' -a '+tmpfile.name+' -i -kT '+str(kT)
         #use declone to compute probs
-        output = subprocess.check_output(command, shell=True, cwd=path)
+        output = subprocess.check_output(command, shell=True)
         #output is just matrix with probabilities
         #each line of the output should contain max one number greater 0, save for internal nodes
         lines = output.split("\n")
@@ -316,7 +317,7 @@ def read_Marker_file(marker):
                 species_marker_order[species] = chromosomes
                 print species
                 print markerCount
-            species = line.split("\t")[0][1:]
+            species = line.split("\t")[0][1:].rstrip("\n")
             chromosomes = {}
             markerCount = 0
             # new chromosome
@@ -351,7 +352,7 @@ args = parser.parse_args()
 #global variables
 #path for output file in Nhx-Format
 nhxFileOut = args.output+'/nhx_tree'
-listOfExtWeightOut =  args.output+'/weighted_extant_adjacencies'
+listOfExtWeightOut =  args.output+'/extant_adjacencies'
 listOfIntWeightOut =  args.output+'/weighted_internal_adjacencies'
 singleLeafAdjOut =  args.output+'/single_leaf_adjacencies'
 
