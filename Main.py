@@ -185,7 +185,7 @@ dict_SCJ={}
 scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
 dict_SCJ.update({'Unsampled':scj_unsampled})
 print time.time() - t0, "seconds process time"
-
+t_sampling=time.time()
 
 #dictionary for statistics of reconstructed Adjacencies
 #structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
@@ -261,4 +261,4 @@ for node in allSampleReconstructionStatistic:
         number=allSampleReconstructionStatistic[node][adj]
         f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
 f.close()
-
+print time.time() - t_sampling,"seconds process time "
