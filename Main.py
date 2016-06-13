@@ -11,7 +11,7 @@ import multiprocessing
 from calculate_SCJ import calculate_SCJ
 import runSample
 
-#global variable
+#global variables
 scj_path='./SCJ_distances'
 statistic_path='./statistic_allSampled_ReconstructedAdjacencies'
 
