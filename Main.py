@@ -52,7 +52,7 @@ extantAdjacencies={}
 extantAdjacencies_species_adj={}
 #structure {node:set([(AdjL,AdjR),..]),..}
 
-#structure
+#fill dictionaries with input from weighted_extant_adjacencies
 f=open(args.extant,'r')
 line=f.readline()
 while line:
@@ -175,10 +175,8 @@ for node in undoubled:
     reconstructedMarkerCount = len(reconstructedMarker)
     # singleton scaffolds number / number of not reconstructed marker
     notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-    # Vergleich/Differenz markerCounter-rekonstruierte Markeranzahl=singleton scaffolds Anzahl
     # number of all scaffolds
     allScaffoldCount = markerCounter + notReconstructedMarkerCount
-    # Summe markerCounter +singleton scaffolds Anzahl= Gesamt Scaffold anzahl
     print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
     print node + " number of scaffolds: " + str(allScaffoldCount)
 
@@ -233,6 +231,7 @@ if args.sampling and  __name__ == '__main__':
 
 #add the SCJ-distance for the unsampled run
 dict_SCJ.update({'Unsampled':scj_unsampled})
+
 
 #write all SCJ distances to output file
 f=open(scj_path,'w')
