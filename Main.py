@@ -129,9 +129,11 @@ ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
 conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
 globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
 
+print "Enumerate joint labelings..."
 jointLabels, first = SR.enumJointLabelings(ccs)
+print "Check valid labels..."
 validLabels, validAtNode = SR.validLabels(jointLabels,first)
-
+print "Compute ancestral labels with SR..."
 topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
 
 reconstructedAdj = SR.reconstructedAdjacencies(topDown)
@@ -140,12 +142,13 @@ for node in reconstructedAdj:
     print node
     print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
 
+print "Scaffolding..."
 scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
 undoubled = scaffolding.undoubleScaffolds(scaffolds)
 scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds")
 scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds")
-scaffolding.sanityCheckScaffolding(undoubled)
-
+log=scaffolding.sanityCheckScaffolding(undoubled)
+print log
 # reconstruct marker pairs out of extantAdjacencies
 # this just needs to be done one time, because the sampling doesn't effect extantAdj
 reconstructedMarker = set()
@@ -197,6 +200,7 @@ allSampleReconstructionStatistic={}
 #Sampling
 if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
+    reconstructedMarkerCount = len(reconstructedMarker)
     samplesize=args.processNumber
     #limiting processNumber on number of cpus
     cpuCount = multiprocessing.cpu_count()
@@ -207,7 +211,7 @@ if args.sampling and  __name__ == '__main__':
     pool = multiprocessing.Pool(processes=samplesize)
     #create args.sampling tasks
     tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
-              extantAdjacencies_species_adj, args.output) for i in range(0, args.sampling))
+              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount) for i in range(0, args.sampling))
     #execute the sampling tasks
     results = pool.map_async(runSample.runSample, tasks)
     #close pool so no more tasks can be handed over to the workers
@@ -221,6 +225,7 @@ if args.sampling and  __name__ == '__main__':
     for tuple in output:
         tempRS = tuple[0]
         tempSCJ = tuple[1]
+        tempOutLog=tuple[2]
         for key in tempRS:
             if key in allSampleReconstructionStatistic:
                 allSampleReconstructionStatistic[key] += tempRS[key]
@@ -228,7 +233,7 @@ if args.sampling and  __name__ == '__main__':
                 allSampleReconstructionStatistic.update({key: tempRS[key]})
         for key in tempSCJ:
             dict_SCJ[key] = tempSCJ[key]
-
+        print tempOutLog
 
 #add the SCJ-distance for the unsampled run
 dict_SCJ.update({'Unsampled':scj_unsampled})

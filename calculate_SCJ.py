@@ -46,5 +46,5 @@ def calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj):
         #print str(scj_node)+' '+str(scj_parent)
         #print 'temp: '+str(temp)
         scj_dist+= temp
-    print "Single-Cut-or-Join-Distance: "+str(scj_dist)
+    #print "Single-Cut-or-Join-Distance: "+str(scj_dist)
     return scj_dist

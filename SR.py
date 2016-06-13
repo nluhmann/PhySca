@@ -5,7 +5,7 @@ import random
 
 
 def enumJointLabelings(ccs):
-    print "Enumerate joint labelings..."
+    #print "Enumerate joint labelings..."
     joint = {}
     fi = {}
     for cc in ccs:
@@ -68,7 +68,7 @@ def constructLabel(allnodes,edges):
     return label
 
 def validLabels(joint,first):
-    print "Check valid labels..."
+    #print "Check valid labels..."
     #check for which internal nodes of the tree, a label is valid (all edges in the label are marked with the internal node)
     #remove all labels that are not valid at any internal node of the tree
     valid = {}
@@ -284,7 +284,7 @@ def sankoff_topdown(t):
     return t
 
 def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
-    print "Compute ancestral labels with SR..."
+    #print "Compute ancestral labels with SR..."
     resolvedCCs = {}
     for cc in ccs:
         treecopy = tree.copy()
@@ -539,7 +539,7 @@ def sankoff_topdown_sampling(t):
     return t
 
 def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
-    print "Compute ancestral labels with SR..."
+    #print "Compute ancestral labels with SR..."
     resolvedCCs = {}
     for cc in ccs:
         treecopy = tree.copy()
