@@ -6,9 +6,9 @@ import SR
 import scaffolding
 import argparse
 import time
+import multiprocessing
 
 from calculate_SCJ import calculate_SCJ
-import runSample_thread
 import runSample
 
 #global variable
@@ -22,7 +22,7 @@ parser.add_argument("-extant",type=str,help="file with precomputed weighted adja
 parser.add_argument("-internal",type=str,help="file with precomputed weighted adjacencies for internal nodes")
 parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
-#parser.add_argument("-sg", "--sampling_group", type=int, help="sample X solutions for given set of parameters")
+parser.add_argument("-pN", "--processNumber", type=int, help="number of processes used for sampling. Max: [number of cpu]",default=1)
 args = parser.parse_args()
 
 t0 = time.time()
@@ -114,9 +114,7 @@ while line:
             spec=set()
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
-        #filling adjacencyProbs with internal nodes
-    #else:
-    #    print(str(adj) + ': ' + str(weight) + ' ist geringer als ' + str(args.x))
+    #filling adjacencyProbs with internal nodes
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
     else:
@@ -148,7 +146,7 @@ scaffolding.outputScaffolds(scaffolds,"doubled_scaffolds")
 scaffolding.sanityCheckScaffolding(undoubled)
 
 # reconstruct marker pairs out of extantAdjacencies
-# this just needs to be done one time, because the sampling doesn't afflict extantAdj
+# this just needs to be done one time, because the sampling doesn't effect extantAdj
 reconstructedMarker = set()
 for adj in extantAdjacencies:
     #each adjacency equals to markerpairs
@@ -197,13 +195,43 @@ print time.time() - t0, "seconds process time"
 #structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
 allSampleReconstructionStatistic={}
 
+#Sampling
 if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
-    samplesize=5
-    #general sampling method
-    allSampleReconstructionStatistic, dict_SCJ=runSample.sample(ccs, tree, extantAdjacencies, adjacencyProbs,args.alpha,
-                                                                       args.sampling, samplesize,  extantAdjacencies_species_adj)
+    samplesize=args.processNumber
+    #limiting processNumber on number of cpus
+    cpuCount = multiprocessing.cpu_count()
+    if samplesize > cpuCount:
+        samplesize = cpuCount
+    print "Using " + str(samplesize) + " parallel processes for sampling."
+    #create a pool of workerprocesses
+    pool = multiprocessing.Pool(processes=samplesize)
+    #create args.sampling tasks
+    tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
+              extantAdjacencies_species_adj) for i in range(0, args.sampling))
+    #execute the sampling tasks
+    results = pool.map_async(runSample.runSample, tasks)
+    #close pool so no more tasks can be handed over to the workers
+    pool.close()
+    #let main programm wait for every workerprocess
+    pool.join()
+    #receive the results
+    output = results.get()
 
+    #parse output and update allSampleReconstrutionStatistic and dit_SCJ with the results
+    for tuple in output:
+        tempRS = tuple[0]
+        tempSCJ = tuple[1]
+        for key in tempRS:
+            if key in allSampleReconstructionStatistic:
+                allSampleReconstructionStatistic[key] += tempRS[key]
+            else:
+                allSampleReconstructionStatistic.update({key: tempRS[key]})
+        for key in tempSCJ:
+            dict_SCJ[key] = tempSCJ[key]
+
+
+#add the SCJ-distance for the unsampled run
 dict_SCJ.update({'Unsampled':scj_unsampled})
 
 #write all SCJ distances to output file
@@ -221,9 +249,6 @@ for node_adj in sorted(allSampleReconstructionStatistic.keys()):
     adj=node_adj[1]
     number=allSampleReconstructionStatistic[node_adj]
     f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
-#for node in allSampleReconstructionStatistic:
-#    for adj in allSampleReconstructionStatistic[node]:
-#        number=allSampleReconstructionStatistic[node][adj]
-#        f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+
 f.close()
 print time.time() - t0, "seconds process time"
