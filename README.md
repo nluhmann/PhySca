@@ -80,13 +80,13 @@ Example:
 
 * *single_leaf_adjacencies* --- contains all adjacencies, which only ocur at one leaf/ in one extant genome
 
-* *weighted_extant_adjacencies* --- contains all adjacencies in extant genomes
+* *extant_adjacencies* --- contains all adjacencies in extant genomes
 
-* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
+* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes with weight
 
 
 ```
-Structure of weighted_extant_adjacencies:
+Structure of extant_adjacencies:
 >node	adjacency
 ```
 
@@ -126,7 +126,7 @@ Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
 
 #### Input files (precomputed by weightingWithDeClone)
 
-* *weighted_extant_adjacencies* --- contains all adjacencies in extant genomes
+* *extant_adjacencies* --- contains all adjacencies in extant genomes
 
 * *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
 
