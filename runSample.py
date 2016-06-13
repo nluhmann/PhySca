@@ -32,7 +32,7 @@ def runSample(params):
         topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha)
         lock.release()
         reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-        SR.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"reconstructed_adjacencies_" + str(i))
+        SR.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"/reconstructed_adjacencies_" + str(i))
 
         for node in reconstructedAdj:
             # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
@@ -46,8 +46,8 @@ def runSample(params):
 
         scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
         undoubled = scaffolding.undoubleScaffolds(scaffolds)
-        scaffolding.outputUndoubledScaffolds(undoubled, outputDirectory+"undoubled_scaffolds_" + str(i))
-        scaffolding.outputScaffolds(scaffolds, outputDirectory+"doubled_scaffolds_" + str(i))
+        scaffolding.outputUndoubledScaffolds(undoubled, outputDirectory+"/undoubled_scaffolds_" + str(i))
+        scaffolding.outputScaffolds(scaffolds, outputDirectory+"/doubled_scaffolds_" + str(i))
         scaffolding.sanityCheckScaffolding(undoubled)
 
         lock.acquire()
