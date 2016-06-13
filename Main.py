@@ -23,6 +23,7 @@ parser.add_argument("-internal",type=str,help="file with precomputed weighted ad
 parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
 parser.add_argument("-pN", "--processNumber", type=int, help="number of processes used for sampling. Max: [number of cpu]",default=1)
+parser.add_argument("-out", "--output", type=str, help="specify output directory, current directory as default", default=".")
 args = parser.parse_args()
 
 t0 = time.time()
@@ -126,7 +127,7 @@ f.close()
 #compute CCs in global adjacency graph
 ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
 conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
-globalAdjacencyGraph.outputConflicts(conflicts,"conflicts")
+globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
 
 jointLabels, first = SR.enumJointLabelings(ccs)
 validLabels, validAtNode = SR.validLabels(jointLabels,first)
@@ -134,15 +135,15 @@ validLabels, validAtNode = SR.validLabels(jointLabels,first)
 topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
 
 reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-SR.outputReconstructedAdjacencies(reconstructedAdj,"reconstructed_adjacencies")
+SR.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
 for node in reconstructedAdj:
     print node
     print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
 
 scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
 undoubled = scaffolding.undoubleScaffolds(scaffolds)
-scaffolding.outputUndoubledScaffolds(undoubled,"undoubled_scaffolds")
-scaffolding.outputScaffolds(scaffolds,"doubled_scaffolds")
+scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds")
+scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds")
 scaffolding.sanityCheckScaffolding(undoubled)
 
 # reconstruct marker pairs out of extantAdjacencies
@@ -176,7 +177,7 @@ for node in undoubled:
     # singleton scaffolds number / number of not reconstructed marker
     notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
     # number of all scaffolds
-    allScaffoldCount = markerCounter + notReconstructedMarkerCount
+    allScaffoldCount = len(undoubled[node]) + notReconstructedMarkerCount
     print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
     print node + " number of scaffolds: " + str(allScaffoldCount)
 
@@ -206,7 +207,7 @@ if args.sampling and  __name__ == '__main__':
     pool = multiprocessing.Pool(processes=samplesize)
     #create args.sampling tasks
     tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
-              extantAdjacencies_species_adj) for i in range(0, args.sampling))
+              extantAdjacencies_species_adj, args.output) for i in range(0, args.sampling))
     #execute the sampling tasks
     results = pool.map_async(runSample.runSample, tasks)
     #close pool so no more tasks can be handed over to the workers
@@ -234,14 +235,14 @@ dict_SCJ.update({'Unsampled':scj_unsampled})
 
 
 #write all SCJ distances to output file
-f=open(scj_path,'w')
+f=open(args.output+"/"+scj_path,'w')
 for sample in dict_SCJ:
     f.write('>'+str(sample)+'\t'+str(dict_SCJ[sample])+'\n')
 f.close()
 
 #write statistic about reconstructed adjacencies to output file
 
-f=open(statistic_path,'w')
+f=open(args.output+"/"+statistic_path,'w')
 f.write('>Header:'+'\t'+str(args.sampling)+'\n')
 for node_adj in sorted(allSampleReconstructionStatistic.keys()):
     node=node_adj[0]
