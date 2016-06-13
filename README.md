@@ -13,34 +13,39 @@ PhySca is composed of a set of Python scripts. It requires the following to be a
 
 
 ### Usage
-
-### 1) Preprocessing with weightingWithDeClone
-
-
 ```
-weightingWithDeClone.py [-h] (-nhx <nhx_tree> | -nf <newick_tree>) [-i]
-                               [-sm <minimum>] (-a <adjacencies> | -m <markers>)
-                               [-kT <kT>] [-jP]
-
+Main.py [-h] [-tree <treefile>] [-alpha <a>] (-m <markerfile> | -a <adjacencies>)
+               (-x <x> | -w <weights>) [-gx <weights>] [-kT <kT>] [-s <Z>]
+               
 ```
 
-  *-h*, --help            show this help message and exit
 
-  *-nhx , --nhx_Tree \<nhx_tree>*		tree file in newick (NHX) format
-
-  *-nf , --Newick \<newick_tree>*		path to the file with NEWICK-tree
-
-  *-i , --ignore_weights*	if set, for either ignore edge length/weights, when parsing Newick Tree into nhx Tree
-
-  *-sm , --set_minimum \<minimum>*		minimal value for every edge length, when parsing Newick Tree into nhx Tree
-
-  *-a , --adjacencies \<adjacencies>*	adjacencies in extant genomes
-
-  *-m, --markers \<markers>*			marker order of extant genomes
-
+  *-h*, --help   show this help message and exit
+  
+  *-tree \<treefile>*            tree file in newick format, if DeClone is used, the tree has to be specified in Extended Newick 
+        (NHX) format
+  
+  *-alpha \<a>*          alpha parameter in objective function, [0,1]
+  
+  *-m , --marker \<markerfile>*       marker order of extant genomes
+                        
+  *-a , --adjacencies \<adjacencies>*
+                        adjacencies in extant genomes
+                        
+  *-x <x>*                 Assign potential adjacencies by weight threshold, [0,1]
+                        
+  *-w , --weight \<weightfile>*
+                        weights for adjacencies at specific internal nodes,
+                        adjacencies at other nodes are assigned a weight of 0
+                        
+  *-gx \<weightfile>*                weights for adjacencies at specific internal nodes,
+                        adjacencies at other nodes have weights computed by
+                        Declone, therefore parameter -x must be given!
+                        
   *-kT \<kT>*                deClone constant
-
-  *-jP , --just_Parse*     if set, just parse the Newick file into nhx file and not run DeClone after it.
+  
+  *-s , --sampling <Z>*
+                        sample Z solutions for given set of parameters
 
 #### Input files
 ##### Marker orders for extant genomes
@@ -72,72 +77,10 @@ Example:
 >extrem1   extrem2    gapID   weight in [0,1]     genome1:start-stop       genome2:start-stop   
 ```
 
-#### Output files
-
-* *nhx_tree* contains given tree in nhx format
-
-* *single_leaf_adjacencies* contains all adjacencies, which only ocur at one leaf/ in one extant genome
-
-* *weighted_extant_adjacencies* contains all adjacencies in extant genomes
-
-* *weighted_internal_adjacencies* contains all adjacencies at internal nodes
-
-
-```
-Structure of weighted_extant_adjacencies:
->node	adjacency
-```
-
-```
-Structure of weighted_internal_adjacencies:
->node	adjacency	weight
-```
-
-### 2) Main
-
-```
-Main.py [-h] [-tree <tree>] [-alpha <alpha>] [-extant <extant>]
-               [-internal <internal>] [-x <x>] [-s <Z>]
-
-```
-
-  *-h*, --help            show this help message and exit
-
-  *-tree \<tree>*            tree file in newick or nhx format
-
-  *-alpha \<alpha>*          alpha parameter in objective function, [0,1]
-
-  *-extant \<extant>*        file with precomputed weighted adjacencies for
-                        external nodes
-
-  *-internal \<internal>*    file with precomputed weighted adjacencies for
-                        internal nodes
-
-  *-x \<x>*                  assign potential adjacencies by weight threshold,
-                        [0,1]
-
-  *-s , --sampling \<Z>*		sample Z solutions for given set of parameters
-
-#### Input files (precomputed by weightingWithDeClone)
-
-* *weighted_extant_adjacencies* contains all adjacencies in extant genomes
-
-* *weighted_internal_adjacencies* contains all adjacencies at internal nodes
-
-
-```
-Structure of weighted_extant_adjacencies:
->node	adjacency
-```
-
-```
-Structure of weighted_internal_adjacencies:
->node	adjacency	weight
-```
-
-
 
 #### Output files
+
+* *ancestral_assigned_adjacencies_with_weight* --- contains all potential adjacencies at each internal node after filtering, together with its weight value
 
 * *conflicts* ---
   contains all pairwise conflicting adjacencies in the set of potential adjacencies at each internal node of the tree
@@ -146,9 +89,6 @@ Structure of weighted_internal_adjacencies:
 
 * *doubled_scaffolds, undoubled_scaffolds* --- contains the set of scaffolds/CARs at each internal node according to the marker order file format described above, either as sequences of marker extremities or signed marker
 
-* *SCJ_distances* contains the Single Cut or Join distance for each sampled solution
-
-* *statistic_allSampled_Reconstructed_Adjacencies* contains for each internal node how often each adjacency occured at this node over all samples 
 
 
 
