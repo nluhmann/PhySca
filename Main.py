@@ -199,6 +199,7 @@ t1=time.time()
 allSampleReconstructionStatistic={}
 
 #Sampling
+#only if a number of samples is given and if the sript is called as standalone (not imported) script
 if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
     reconstructedMarkerCount = len(reconstructedMarker)
