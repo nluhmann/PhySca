@@ -35,7 +35,7 @@ for((p=0;p<$#;p+=1))
 		;;
 		-a) adjacencies=${parameterArray[$((p+1))]}
 		;;
-		-m) markers=${parameterArray[$((p+1))]}}
+		-m) markers=${parameterArray[$((p+1))]}
 		;;
 		-kT) kT=${parameterArray[$((p+1))]}
 		;;
@@ -137,7 +137,12 @@ python ${phySca}/weightingWithDeClone.py ${MAparam} ${MA} ${treeparam} ${tree} -
 
 extant="${out}/extant_adjacencies"
 internal="${out}/weighted_internal_adjacencies"
-nhx_tree="${out}/nhx_tree"
+if [ -z $nhx ]
+    then
+        nhx_tree="${out}/nhx_tree"
+    else
+        nhx_tree=$tree
+fi
 #create directories for each sample run
 for ((i=0;i<$processNumber;i+=1))
 	do 
@@ -164,7 +169,7 @@ for ((i=0;i<$processNumber;i+=1))
 				python ${phySca}/Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sc $i > ${PWD}/log.txt&
 		else
 		    #PhySca call without 0th sample
-			python ${phySca}/Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sk -sc $(($i+$sampleNumber-1)) > ${PWD}/log.txt&
+			python ${phySca}/Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sk -sc $(($i*$sampleNumber)) > ${PWD}/log.txt&
 		
 		fi
 		cd ..
