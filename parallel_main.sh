@@ -3,12 +3,11 @@
 #Script, for calling  PhySca (Main.py) parallel on different cores
 #aufzurufen
 #
-#./parallel_main.sh -nf /home/philipp/SHK_2016/Project/Input_Output/pestis_input/yersinia_species_tree -a /home/philipp/SHK_2016/Project/Input_Output/pestis_input/adjacencies -out /home/philipp/SHK_2016/Project/PhySca/pestis_testlauf -pN 3 -s 5
 #
 #make a directory for each call
 if [ $1 = "-h" ] || [ $1 = "-help" ]
 	then
-		echo "-nhx/-nf [treefile(preprocessing)] -a [adjacencies]/ -m [markers] (-out [directory for preprocessing output]) (-pN [number of processes]) (-alpha [alpha]) (-s [number of samples]) (-x [x]) "
+		echo "-nhx/-nf [treefile(preprocessing)] -a [adjacencies]/ -m [markers] (-out [directory for preprocessing output]) (-pN [number of processes]) (-alpha [alpha]) (-s [number of samples]) (-x [x]) (-phySca [path to directory with PhySca scripts]) "
 fi
 
 
@@ -41,6 +40,8 @@ for((p=0;p<$#;p+=1))
 		-kT) kT=${parameterArray[$((p+1))]}
 		;;
 		-out) out=${parameterArray[$((p+1))]}
+		;;
+		-phySca) phySca=${parameterArray[$((p+1))]}
 		;;
 		*)
 		;;
@@ -119,8 +120,20 @@ if [ -z $out ]
 				
 fi
 
+if [ -z $phySca ]
+    then
+        echo "Assuming PhySca scripts in current directory"
+        phySca=${PWD}
+    elif [ -d $phySca ]
+	     then
+		    echo "PhySca scripts are located in ${phySca}"
+	else
+	    echo "directory for PhySca scripts ${phySca} doesnt' exist."
+	    exit
+
+fi
 #preprocessing: weighting With DeClone
-python ./weightingWithDeClone.py ${MAparam} ${MA} ${treeparam} ${tree} -kT ${kT} -out ${out}
+python ${phySca}/weightingWithDeClone.py ${MAparam} ${MA} ${treeparam} ${tree} -kT ${kT} -out ${out}
 
 extant="${out}/extant_adjacencies"
 internal="${out}/weighted_internal_adjacencies"
@@ -148,10 +161,10 @@ for ((i=0;i<$processNumber;i+=1))
 		if [ $i -eq 0 ]
 			then
 			#PhySca call with 0th sample
-				python ../Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sc $i > ${PWD}/log.txt&
+				python ${phySca}/Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sc $i > ${PWD}/log.txt&
 		else
 		    #PhySca call without 0th sample
-			python ../Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sk -sc $(($i+$sampleNumber-1)) > ${PWD}/log.txt&
+			python ${phySca}/Main.py -tree $nhx_tree -alpha $alpha -s $sampleNumber -x $x -extant $extant -internal $internal -out ${PWD} -sk -sc $(($i+$sampleNumber-1)) > ${PWD}/log.txt&
 		
 		fi
 		cd ..
@@ -196,7 +209,7 @@ for ((i=0;i<$processNumber;i+=1))
 
     done
 flist=$(printf ",%s" "${fileList[@]}")
-python putStatisticFilesTogether.py ${flist:1} ${outputDir}/statistic_allSampled_ReconstructedAdjacencies
+python ${phySca}/putStatisticFilesTogether.py ${flist:1} ${outputDir}/statistic_allSampled_ReconstructedAdjacencies
 
 #"  " in the sort statement is an tab
 cat ${outputDir}/temp_distances | sort -t " " -nk1 >> ${outputDir}/SCJ_distances
