@@ -7,7 +7,7 @@ __author__ = 'Nina'
 
 
 def scaffoldAdjacencies(reconstructedAdj):
-    print "Scaffolding..."
+    #print "Scaffolding..."
     scaffoldsPerNode = {}
     for node in reconstructedAdj:
         adjacencies = reconstructedAdj[node]
@@ -210,6 +210,7 @@ def outputScaffolds(scaffolds,output):
 
 
 def sanityCheckScaffolding(undoubledScaffolds):
+    log=""
     for node in undoubledScaffolds:
         scaffolds = undoubledScaffolds[node]
         testHash = {}
@@ -218,10 +219,13 @@ def sanityCheckScaffolding(undoubledScaffolds):
                 if "-" in str(elem):
                     elem = elem[1:]
                 if elem in testHash:
-                    print node
-                    print elem
+                    #print node
+                    #print elem
+                    log+=str(node)+"\n"
+                    log+=str(elem)+"\n"
                 else:
                     testHash[elem] = 1
+    return log
 
 def compareAdjacencyLists(list1, list2):
     set1 = set(list1)

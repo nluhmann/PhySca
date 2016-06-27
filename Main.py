@@ -6,10 +6,12 @@ import SR
 import scaffolding
 import argparse
 import time
+import multiprocessing
 
 from calculate_SCJ import calculate_SCJ
+import runSample
 
-#global variable
+#global variables
 scj_path='./SCJ_distances'
 statistic_path='./statistic_allSampled_ReconstructedAdjacencies'
 
@@ -20,6 +22,7 @@ parser.add_argument("-extant",type=str,help="file with precomputed weighted adja
 parser.add_argument("-internal",type=str,help="file with precomputed weighted adjacencies for internal nodes")
 parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
+parser.add_argument("-pN", "--processNumber", type=int, help="number of processes used for sampling. Max: [number of cpu]",default=1)
 parser.add_argument("-out", "--output", type=str, help="specify output directory, current directory as default", default=".")
 parser.add_argument("-sk", "--skip_first", action='store_const', const=True, help="boolean, for skipping the 0th sampling")
 parser.add_argument("-sc", "--start_counting", type=int, help="specifies the starting number for enumerating the samples",default=0)
@@ -114,7 +117,7 @@ while line:
             spec=set()
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
-        #filling adjacencyProbs with internal nodes
+    #filling adjacencyProbs with internal nodes
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
     else:
@@ -123,9 +126,9 @@ while line:
     line=f.readline()
 f.close()
 
+
 #dictionary for all scj distances
 dict_SCJ={}
-
 
 #compute CCs in global adjacency graph
 ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
@@ -194,71 +197,57 @@ t_sampling=time.time()
 #structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
 allSampleReconstructionStatistic={}
 
-if args.sampling:
+#Sampling
+#only if a number of samples is given and if the sript is called as standalone (not imported) script
+if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
+    # reconstruct marker pairs out of extantAdjacencies
+    reconstructedMarker = set()
+    for adj in extantAdjacencies:
+        # each adjacency equals to markerpairs
+        adj_list = [adj[0], adj[1]]
+        for adjpart in adj_list:
+            if (adjpart % 2 == 0):
+                markerId = adjpart / 2
+            else:
+                markerId = (adjpart + 1) / 2
+            reconstructedMarker.add(markerId)
+    reconstructedMarkerCount = len(reconstructedMarker)
+    samplesize=args.processNumber
+    #limiting processNumber on number of cpus
+    cpuCount = multiprocessing.cpu_count()
+    if samplesize > cpuCount:
+        samplesize = cpuCount
+    print "Using " + str(samplesize) + " parallel processes for sampling."
+    print "Making " +str(args.sampling) + " samples"
+    #create a pool of workerprocesses
+    pool = multiprocessing.Pool(processes=samplesize)
+    #create args.sampling tasks
+    tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
+              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount) for i in range(args.start_counting, args.sampling+args.start_counting))
+    #execute the sampling tasks
+    results = pool.map_async(runSample.runSample, tasks)
+    #close pool so no more tasks can be handed over to the workers
+    pool.close()
+    #let main programm wait for every workerprocess
+    pool.join()
+    #receive the results
+    output = results.get()
 
-    for i in range(args.start_counting,args.sampling+args.start_counting):
-        t1 = time.time()
-        jointLabels, first = SR.enumJointLabelings(ccs)
-        validLabels, validAtNode = SR.validLabels(jointLabels,first)
-        print "###################### "+str(i)+" ######################"
-        topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
-        reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-        SR.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies_"+str(i))
-        for node in reconstructedAdj:
-            print node
-            print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
-            # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
-            for adjacency in reconstructedAdj[node]:
-                if node in allSampleReconstructionStatistic:
-                    if adjacency in allSampleReconstructionStatistic[node]:
-                        allSampleReconstructionStatistic[node][adjacency] += 1
-                    else:
-                        dict_adj = {adjacency: 1}
-                        allSampleReconstructionStatistic[node].update(dict_adj)
-                else:
-                    allSampleReconstructionStatistic.update({node:{adjacency:1}})
+    #parse output and update allSampleReconstrutionStatistic and dit_SCJ with the results
+    for tuple in output:
+        tempRS = tuple[0]
+        tempSCJ = tuple[1]
+        tempOutLog=tuple[2]
+        for key in tempRS:
+            if key in allSampleReconstructionStatistic:
+                allSampleReconstructionStatistic[key] += tempRS[key]
+            else:
+                allSampleReconstructionStatistic.update({key: tempRS[key]})
+        for key in tempSCJ:
+            dict_SCJ[key] = tempSCJ[key]
+        print tempOutLog
 
-        scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
-        undoubled = scaffolding.undoubleScaffolds(scaffolds)
-        scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds_"+str(i))
-        scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds_"+str(i))
-        scaffolding.sanityCheckScaffolding(undoubled)
-
-        reconstructedMarker = set()
-        for adj in extantAdjacencies:
-            # each adjacency equals to markerpairs
-            adj_list = [adj[0], adj[1]]
-            for adjpart in adj_list:
-                if (adjpart % 2 == 0):
-                    markerId = adjpart / 2
-                else:
-                    markerId = (adjpart + 1) / 2
-                reconstructedMarker.add(markerId)
-
-        for node in undoubled:
-            print node
-            markerCounter = 0
-            for scaffold in undoubled[node]:
-                first = scaffold[0]
-                last = scaffold[-1]
-                if not first == last:
-                    markerCounter = markerCounter + len(scaffold)
-                else:
-                    markerCounter = markerCounter + len(scaffold)-1
-            print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
-            #number of reconstructed markerIds
-            reconstructedMarkerCount=len(reconstructedMarker)
-            #singleton scaffolds number / number of not reconstructed marker
-            notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-            #number of all scaffolds
-            allScaffoldCount=markerCounter + notReconstructedMarkerCount
-            print node+" number of singleton scaffolds (not reconstructed marker): "+str(notReconstructedMarkerCount)
-            print node+" number of scaffolds: "+str(allScaffoldCount)
-        print time.time() - t1, "seconds process time"
-        
-        scj=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
-        dict_SCJ.update({'Sample_'+str(i):scj})
 
 #write all SCJ distances to output file
 f=open(args.output+"/"+scj_path,'w')
@@ -270,9 +259,14 @@ f.close()
 
 f=open(args.output+"/"+statistic_path,'w')
 f.write('>Header:'+'\t'+str(args.sampling)+'\n')
-for node in allSampleReconstructionStatistic:
-    for adj in allSampleReconstructionStatistic[node]:
-        number=allSampleReconstructionStatistic[node][adj]
-        f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+
+for node_adj in sorted(allSampleReconstructionStatistic.keys()):
+    node=node_adj[0]
+    adj=node_adj[1]
+    number=allSampleReconstructionStatistic[node_adj]
+    f.write('>'+str(node)+'\t'+str(adj)+'\t'+str(number)+'\n')
+
 f.close()
-print time.time() - t_sampling,"seconds process time "
+print time.time() - t_sampling, "seconds process time"
+print time.time() - t0, "seconds process time complete"
+

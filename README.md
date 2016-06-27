@@ -20,7 +20,7 @@ PhySca is composed of a set of Python scripts. It requires the following to be a
 ```
 weightingWithDeClone.py [-h] (-nhx <nhx_tree> | -nf <newick_tree>) [-i]
                                [-sm <minimum>] (-a <adjacencies> | -m <markers>)
-                               [-kT <kT>] [-jP]
+                               [-kT <kT>] [-jP] [-out <output>]
 
 ```
 
@@ -41,6 +41,8 @@ weightingWithDeClone.py [-h] (-nhx <nhx_tree> | -nf <newick_tree>) [-i]
   *-kT \<kT>*                deClone constant
 
   *-jP , --just_Parse*     if set, just parse the Newick file into nhx file and not run DeClone after it.
+
+  *-out , --output \<output>*		output directory, current directory as default
 
 #### Input files
 ##### Marker orders for extant genomes
@@ -74,17 +76,17 @@ Example:
 
 #### Output files
 
-* *nhx_tree* contains given tree in nhx format
+* *nhx_tree* --- contains given tree in nhx format
 
-* *single_leaf_adjacencies* contains all adjacencies, which only ocur at one leaf/ in one extant genome
+* *single_leaf_adjacencies* --- contains all adjacencies, which only ocur at one leaf/ in one extant genome
 
-* *weighted_extant_adjacencies* contains all adjacencies in extant genomes
+* *extant_adjacencies* --- contains all adjacencies in extant genomes
 
-* *weighted_internal_adjacencies* contains all adjacencies at internal nodes
+* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes with weight
 
 
 ```
-Structure of weighted_extant_adjacencies:
+Structure of extant_adjacencies:
 >node	adjacency
 ```
 
@@ -96,21 +98,21 @@ Structure of weighted_internal_adjacencies:
 ### 2) Main
 
 ```
-Main.py [-h] [-tree <tree>] [-alpha <alpha>] [-extant <extant>]
-               [-internal <internal>] [-x <x>] [-s <Z>]
+Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
+               [-internal <internal>] [-x <x>] [-s <Z>] [-pN <processnumber>] [-out <output>]
 
 ```
 
-  *-h*, --help            show this help message and exit
+  *-h*, --help			show this help message and exit
 
-  *-tree \<tree>*            tree file in newick or nhx format
+  *-tree \<treefile>*		tree file in newick or nhx format
 
-  *-alpha \<alpha>*          alpha parameter in objective function, [0,1]
+  *-alpha \<alpha>*		alpha parameter in objective function, [0,1]
 
-  *-extant \<extant>*        file with precomputed weighted adjacencies for
+  *-extant \<extant>*		file with precomputed weighted adjacencies for
                         external nodes
 
-  *-internal \<internal>*    file with precomputed weighted adjacencies for
+  *-internal \<internal>*	    file with precomputed weighted adjacencies for
                         internal nodes
 
   *-x \<x>*                  assign potential adjacencies by weight threshold,
@@ -118,11 +120,15 @@ Main.py [-h] [-tree <tree>] [-alpha <alpha>] [-extant <extant>]
 
   *-s , --sampling \<Z>*		sample Z solutions for given set of parameters
 
+  *-pN, --processNumber \<processnumber>*		number of processes used for sampling. Max: [number of cpu], default=1
+
+  *-out , --output \<output>*		output directory, current directory as default
+
 #### Input files (precomputed by weightingWithDeClone)
 
-* *weighted_extant_adjacencies* contains all adjacencies in extant genomes
+* *extant_adjacencies* --- contains all adjacencies in extant genomes
 
-* *weighted_internal_adjacencies* contains all adjacencies at internal nodes
+* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
 
 
 ```
@@ -146,9 +152,9 @@ Structure of weighted_internal_adjacencies:
 
 * *doubled_scaffolds, undoubled_scaffolds* --- contains the set of scaffolds/CARs at each internal node according to the marker order file format described above, either as sequences of marker extremities or signed marker
 
-* *SCJ_distances* contains the Single Cut or Join distance for each sampled solution
+* *SCJ_distances* --- contains the Single Cut or Join distance for each sampled solution
 
-* *statistic_allSampled_Reconstructed_Adjacencies* contains for each internal node how often each adjacency occured at this node over all samples 
+* *statistic_allSampled_Reconstructed_Adjacencies* --- contains for each internal node how often each adjacency occured at this node over all samples 
 
 
 
