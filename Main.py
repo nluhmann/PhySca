@@ -21,6 +21,8 @@ parser.add_argument("-internal",type=str,help="file with precomputed weighted ad
 parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
 parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
 parser.add_argument("-out", "--output", type=str, help="specify output directory, current directory as default", default=".")
+parser.add_argument("-sk", "--skip_first", action='store_const', const=True, help="boolean, for skipping the 0th sampling")
+parser.add_argument("-sc", "--start_counting", type=int, help="specifies the starting number for enumerating the samples",default=0)
 args = parser.parse_args()
 
 t0 = time.time()
@@ -121,69 +123,70 @@ while line:
     line=f.readline()
 f.close()
 
-#compute CCs in global adjacency graph
-ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
-conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
-globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
-
-jointLabels, first = SR.enumJointLabelings(ccs)
-validLabels, validAtNode = SR.validLabels(jointLabels,first)
-
-topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
-
-reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-SR.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
-for node in reconstructedAdj:
-    print node
-    print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
-
-scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
-undoubled = scaffolding.undoubleScaffolds(scaffolds)
-scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds")
-scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds")
-scaffolding.sanityCheckScaffolding(undoubled)
-
-# reconstruct marker pairs out of extantAdjacencies
-# this just needs to be done one time, because the sampling doesn't effect extantAdj
-reconstructedMarker = set()
-for adj in extantAdjacencies:
-    #each adjacency equals to markerpairs
-    adj_list=[ adj[0], adj[1] ]
-    for adjpart in adj_list:
-        if (adjpart % 2 ==0):
-            markerId=adjpart/2
-        else:
-            markerId=(adjpart+1)/2
-        reconstructedMarker.add(markerId)
-
-
-
-for node in undoubled:
-    print node
-    markerCounter = 0
-    for scaffold in undoubled[node]:
-        first = scaffold[0]
-        last = scaffold[-1]
-        if not first == last:
-            markerCounter = markerCounter + len(scaffold)
-        else:
-            markerCounter = markerCounter + len(scaffold)-1
-    print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
-    # number of reconstructed markerIds
-    reconstructedMarkerCount = len(reconstructedMarker)
-    # singleton scaffolds number / number of not reconstructed marker
-    notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
-    # number of all scaffolds
-    allScaffoldCount = len(undoubled[node]) + notReconstructedMarkerCount
-    print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
-    print node + " number of scaffolds: " + str(allScaffoldCount)
-
 #dictionary for all scj distances
 dict_SCJ={}
 
-#calculate SCJ-distance for unsampled solution
-scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
-dict_SCJ.update({'Unsampled':scj_unsampled})
+
+#compute CCs in global adjacency graph
+ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
+if (not args.skip_first):
+    conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
+    globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
+
+    jointLabels, first = SR.enumJointLabelings(ccs)
+    validLabels, validAtNode = SR.validLabels(jointLabels,first)
+
+    topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
+
+    reconstructedAdj = SR.reconstructedAdjacencies(topDown)
+    SR.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
+    for node in reconstructedAdj:
+        print node
+        print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
+
+    scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
+    undoubled = scaffolding.undoubleScaffolds(scaffolds)
+    scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds")
+    scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds")
+    scaffolding.sanityCheckScaffolding(undoubled)
+
+    # reconstruct marker pairs out of extantAdjacencies
+    reconstructedMarker = set()
+    for adj in extantAdjacencies:
+        #each adjacency equals to markerpairs
+        adj_list=[ adj[0], adj[1] ]
+        for adjpart in adj_list:
+            if (adjpart % 2 ==0):
+                markerId=adjpart/2
+            else:
+                markerId=(adjpart+1)/2
+            reconstructedMarker.add(markerId)
+
+
+    for node in undoubled:
+        print node
+        markerCounter = 0
+        for scaffold in undoubled[node]:
+            first = scaffold[0]
+            last = scaffold[-1]
+            if not first == last:
+                markerCounter = markerCounter + len(scaffold)
+            else:
+                markerCounter = markerCounter + len(scaffold)-1
+        print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
+        # number of reconstructed markerIds
+        reconstructedMarkerCount = len(reconstructedMarker)
+        # singleton scaffolds number / number of not reconstructed marker
+        notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
+        # number of all scaffolds
+        allScaffoldCount = len(undoubled[node]) + notReconstructedMarkerCount
+        print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
+        print node + " number of scaffolds: " + str(allScaffoldCount)
+
+        #calculate SCJ-distance for unsampled solution
+        scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+        dict_SCJ.update({'Unsampled':scj_unsampled})
+
 print time.time() - t0, "seconds process time"
 t_sampling=time.time()
 
@@ -194,7 +197,7 @@ allSampleReconstructionStatistic={}
 if args.sampling:
     print "SAMPLING"
 
-    for i in range(0,args.sampling):
+    for i in range(args.start_counting,args.sampling+args.start_counting):
         t1 = time.time()
         jointLabels, first = SR.enumJointLabelings(ccs)
         validLabels, validAtNode = SR.validLabels(jointLabels,first)
@@ -221,6 +224,17 @@ if args.sampling:
         scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds_"+str(i))
         scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds_"+str(i))
         scaffolding.sanityCheckScaffolding(undoubled)
+
+        reconstructedMarker = set()
+        for adj in extantAdjacencies:
+            # each adjacency equals to markerpairs
+            adj_list = [adj[0], adj[1]]
+            for adjpart in adj_list:
+                if (adjpart % 2 == 0):
+                    markerId = adjpart / 2
+                else:
+                    markerId = (adjpart + 1) / 2
+                reconstructedMarker.add(markerId)
 
         for node in undoubled:
             print node
