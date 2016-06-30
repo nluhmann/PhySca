@@ -20,8 +20,10 @@ if [ $1 = "-h" ] || [ $1 = "--help" ]
 		-nf <newick_tree>	path to the file with NEWICK-tree
 		-a <adjacencies>	adjacencies in extant genomes
 		-m <markers>	marker order of extant genomes
-		-output <output>	path to directory for preprocessing output, default=./testlauf
-		-pN <processnumber>	number of processes used for sampling. Max: [number of cpu], default=1
+		-output <output>	path to directory for preprocessing output,
+							default=./testlauf
+		-pN <processnumber>	number of processes used for sampling. 
+							Max: [number of cpu], default=1
 		-alpha <alpha>	alpha parameter in objective function, [0,1], default=0.0
 		-x <x>	assign potential adjacencies by weight threshold,[0,1], default=0
 		-kT <kT> deClone constant, default=0.1
