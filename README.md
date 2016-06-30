@@ -12,6 +12,48 @@ PhySca is composed of a set of Python scripts. It requires the following to be a
 * software DeClone (https://github.com/yannponty/DeClone)
 
 
+### Quick Start
+
+If you want to quickly make a whole run through of the program including preprocessing you can use the script 'parallel_main.sh'.
+
+### parallel_main.sh
+
+
+```
+parallel_main.sh [-h](-nhx <nhx_tree> | -nf <newick_tree>) 
+		 (-a <adjacencies>/ -m <markers>) 
+		 [-out <output>] 
+		 [-pN <number of processes>] 
+		 [-alpha <alpha>] [-s <Z>] [-x <x>] [-kT <kT>]
+		 [-phySca <phySca>]
+		
+
+```
+
+  *-h*,--help		 show this help message and exit
+
+  *-nhx \<nhx_tree>*		tree file in newick (NHX) format
+
+  *-nf \<newick_tree>*		path to the file with NEWICK-tree
+
+  *-a \<adjacencies>*	adjacencies in extant genomes
+
+  *-m \<markers>*			marker order of extant genomes
+
+  *-output \<output>*		path to directory for preprocessing output, default: ./testlauf
+
+  *-pN, \<processnumber>*		number of processes used for sampling. Max: [number of cpu], default=1
+
+  *-alpha \<alpha>*		alpha parameter in objective function, [0,1]
+	
+  *-x \<x>*                  assign potential adjacencies by weight threshold, [0,1]
+	
+  *-kT \<kT>*                deClone constant
+
+  *-s \<Z>*		sample Z solutions for given set of parameters
+
+  *-phySca \<phySca>*	path to directory with main program (PhySca), default: ./
+
 ### Usage
 
 ### 1) Preprocessing with weightingWithDeClone
@@ -80,13 +122,13 @@ Example:
 
 * *single_leaf_adjacencies* --- contains all adjacencies, which only ocur at one leaf/ in one extant genome
 
-* *extant_adjacencies* --- contains all adjacencies in extant genomes
+* *weighted_extant_adjacencies* --- contains all adjacencies in extant genomes
 
-* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes with weight
+* *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
 
 
 ```
-Structure of extant_adjacencies:
+Structure of weighted_extant_adjacencies:
 >node	adjacency
 ```
 
@@ -126,7 +168,7 @@ Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
 
 #### Input files (precomputed by weightingWithDeClone)
 
-* *extant_adjacencies* --- contains all adjacencies in extant genomes
+* *weighted_extant_adjacencies* --- contains all adjacencies in extant genomes
 
 * *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
 
