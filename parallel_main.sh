@@ -5,9 +5,29 @@
 #
 #
 #make a directory for each call
-if [ $1 = "-h" ] || [ $1 = "-help" ]
+if [ $1 = "-h" ] || [ $1 = "--help" ]
 	then
-		echo "-nhx/-nf [treefile(preprocessing)] -a [adjacencies]/ -m [markers] (-out [directory for preprocessing output]) (-pN [number of processes]) (-alpha [alpha]) (-s [number of samples]) (-x [x]) (-phySca [path to directory with PhySca scripts]) "
+		echo "parallel_main.sh [-h](-nhx<nhx_tree> | -nf <newick_tree>)
+    	(-a <adjacencies>/ -m <markers>)
+    	[-out <output>]
+    	[-pN <number of processes>]
+    	[-alpha <alpha>] [-s <Z>] [-x <x>]
+    	[-phySca <phySca>]
+    	
+    	
+		-h,--help	show this help message and exit
+		-nhx <nhx_tree>	tree file in newick (NHX) format
+		-nf <newick_tree>	path to the file with NEWICK-tree
+		-a <adjacencies>	adjacencies in extant genomes
+		-m <markers>	marker order of extant genomes
+		-output <output>	path to directory for preprocessing output
+		-pN <processnumber>	number of processes used for sampling. Max: [number of cpu], default=1
+		-alpha <alpha>	alpha parameter in objective function, [0,1]
+		-x <x>	assign potential adjacencies by weight threshold,[0,1]
+		-s <Z>	sample Z solutions for given set of parameters
+		-phySca <phySca>	path to directory with main program (PhySca)"
+    	
+    	exit
 fi
 
 
