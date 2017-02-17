@@ -1,6 +1,6 @@
 # PhySca
 
-PhySca samples solutions to the SCJ small parsimony problem for weighted gene adjacencies.
+PhySca samples solutions to the Single-Cut-and-Join (SCJ) small parsimony problem for weighted gene adjacencies.
 
 
 ### Requirements
