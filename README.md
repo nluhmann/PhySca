@@ -173,7 +173,7 @@ Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
 * *weighted_extant_adjacencies* --- contains all adjacencies in extant genomes
 
 * *weighted_internal_adjacencies* --- contains all adjacencies at internal nodes
-
+ 
 
 ```
 Structure of weighted_extant_adjacencies:
@@ -201,4 +201,5 @@ Structure of weighted_internal_adjacencies:
 * *statistic_allSampled_Reconstructed_Adjacencies* --- contains for each internal node how often each adjacency occured at this node over all samples 
 
 
-
+### Reference
+Nina Luhmann, Manuel Lafond, Annelyse Thevenin, Aida Ouangraoua, Roland Wittler, Cedric Chauve, "The SCJ Small Parsimony Problem for Weighted Gene Adjacencies", IEEE/ACM Transactions on Computational Biology and Bioinformatics, [doi:10.1109/TCBB.2017.2661761 ](http://ieeexplore.ieee.org/document/7837680/)
