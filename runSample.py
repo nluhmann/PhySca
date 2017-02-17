@@ -1,15 +1,12 @@
-from ete2 import Tree
-import getAdjacencies
-import globalAdjacencyGraph
-import SR
+
+import SR2
 import scaffolding
-import argparse
-import time
+
 
 from calculate_SCJ import calculate_SCJ
-import multiprocessing
 
-#run method, does one sampling
+
+#sample one optimal solution
 def runSample(params):
         #retrieving the given parameter
         ccs=params[0]
@@ -21,34 +18,34 @@ def runSample(params):
         extantAdjacencies_species_adj=params[6]
         outputDirectory=params[7]
         reconstructedMarkerCount=params[8]
+        ancientLeaves=params[9]
         allSampleReconstructionStatistic={}
         dict_SCJ={}
-        #lock = multiprocessing.Lock()
+
         #output text log
         outLog="Sample: "+str(i)+"\n"
 
-        #start sampling method like in the Main.py
+        #start sampling method
         outLog+="Enumerate joint labelings...\n"
-        jointLabels, first = SR.enumJointLabelings(ccs)
+        jointLabels, first = SR2.enumJointLabelings(ccs)
         outLog+="Check valid labels...\n"
-        validLabels, validAtNode = SR.validLabels(jointLabels, first)
+        validLabels, validAtNode = SR2.validLabels(jointLabels, first)
 
-        #lock.acquire()
+
         outLog+= "Compute ancestral labels with SR...\n"
-        topDown = SR.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha)
-        #lock.release()
-        reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-        SR.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"/reconstructed_adjacencies_" + str(i))
+
+        reconstructedAdj = SR2.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha, ancientLeaves)
+        SR2.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"/reconstructed_adjacencies_" + str(i))
 
         for node in reconstructedAdj:
             # count for each adjaency on each internal node, how often this adjacencies over all samples occurs there
             for adjacency in reconstructedAdj[node]:
-                #lock.acquire()
                 if (node,adjacency) in allSampleReconstructionStatistic:
                     allSampleReconstructionStatistic[(node,adjacency)] += 1
                 else:
                     allSampleReconstructionStatistic.update({(node,adjacency):1})
-                #lock.release()
+
+
         outLog+="Scaffolding...\n"
         scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
         undoubled = scaffolding.undoubleScaffolds(scaffolds)
@@ -72,15 +69,14 @@ def runSample(params):
             notReconstructedMarkerCount = reconstructedMarkerCount - markerCounter
             # number of all scaffolds
             allScaffoldCount = len(undoubled[node]) + notReconstructedMarkerCount
-            outLog+= str(node) + " number of singleton scaffolds (not reconstructed marker): " + str(
-                notReconstructedMarkerCount)+'\n'
+            outLog+= str(node) + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)+'\n'
             outLog+= str(node) + " number of scaffolds: " + str(allScaffoldCount)+'\n'
 
 
-        #lock.acquire()
+
         scj = calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
         outLog+="Single-Cut-or-Join-Distance: " + str(scj)+'\n'
         dict_SCJ.update({'Sample_' + str(i): scj})
-        #lock.release()
+
         return (allSampleReconstructionStatistic,dict_SCJ,outLog)
 

@@ -1,4 +1,4 @@
-__author__ = 'Nina'
+__author__ = 'nluhmann'
 
 import networkx as nx
 import itertools
@@ -9,7 +9,7 @@ import math
 # ancestral:
 # key: adjacency, value: list of internal nodes
 # graph: #keys: nodes, value: dict (keys: neighbors, value:additional infos if needed)
-def createGraph(extant,ancestral):
+def createGraph(ancestral,skip):
 
     print "Create global adjacency graph..."
     G=nx.Graph()
@@ -40,11 +40,29 @@ def createGraph(extant,ancestral):
     complex = 7 * math.pow(numberOfLabels,2)
     print "Number of Labels: "+str(numberOfLabels)
     print "Complexity: "+str(complex)
-    if len(graphs) > 10:
-        for i in range(0,10):
-            #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
-            print str(nx.number_of_edges(graphs[i]))
-    return graphs
+
+    toDel = []
+    removedAdjacencies = []
+    if not skip == -1:
+        if len(graphs) > 10:
+            for i in range(0,10):
+                if nx.number_of_edges(graphs[i]) > skip:
+                    print "Deleted CC with "+str(nx.number_of_edges(graphs[i]))+" edges."
+                    print nx.edges(graphs[i])
+                    for edge in nx.edges(graphs[i]):
+                        removedAdjacencies.append(edge)
+                    toDel.append(i)
+        toDel.reverse()
+        for elem in toDel:
+            del graphs[elem]
+
+
+
+    # if len(graphs) > 10:
+    #     for i in range(0,10):
+    #         #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
+    #         print str(nx.number_of_edges(graphs[i]))
+    return graphs, removedAdjacencies, ancestral
 
 
 

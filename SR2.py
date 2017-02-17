@@ -1,11 +1,11 @@
-__author__ = 'Nina'
+__author__ = 'nluhmann'
 import networkx as nx
-from ete2 import Tree
 import random
 
 
 def enumJointLabelings(ccs):
-    #print "Enumerate joint labelings..."
+    print 'Enumerate joint labelings...'
+
     joint = {}
     fi = {}
     for cc in ccs:
@@ -19,7 +19,7 @@ def enumJointLabelings(ccs):
         labelings.add(tuple(first))
         counter = len(edges)
         #add edges to labeling if it is valid
-        for i in range(0,counter):
+        for i in xrange(0,counter):
             newlabels = set()
             for labeling in labelings:
                 for edg in edges:
@@ -48,6 +48,7 @@ def sortEdge(edge):
 
 
 def constructLabel(allnodes,edges):
+
     #edge is a tuple of two nodes, label these nodes with the edge
     label = []
     for node in allnodes:
@@ -68,9 +69,10 @@ def constructLabel(allnodes,edges):
     return label
 
 def validLabels(joint,first):
-    #print "Check valid labels..."
+    print "Check valid labels..."
     #check for which internal nodes of the tree, a label is valid (all edges in the label are marked with the internal node)
     #remove all labels that are not valid at any internal node of the tree
+
     valid = {}
     validAtNode = {}
     for cc in joint:
@@ -130,6 +132,7 @@ def useAllLabels(joint,first,tree):
 
 
 def cost(parentLabel, childLabel, edges, probs, node, alpha):
+
     #label is a list of tuple
     parentAdj = set()
     if len(parentLabel) == 1:
@@ -163,6 +166,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
                         weight = 0
                 else:
                     weight = 0
+
                 cost = cost + (alpha*weight) + ((1-alpha)/edgeLength)
         elif edge in childAdj:
             if not edge in parentAdj:
@@ -183,6 +187,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
 
 
 def annotateleaves(leaf,cc,extant):
+
     nodes = cc.nodes()
     edges = cc.edges()
     label = []
@@ -205,29 +210,26 @@ def annotateleaves(leaf,cc,extant):
 
 
 
-def sankoff_bottomup(t,space):
-    """
+def sankoff_bottomup(t,space, edges, probs, alpha):
 
-    :rtype : tree
-    """
+
     for node in t.traverse(strategy="postorder"):
         #get annotation for all children of node
         if not node.is_leaf():
 
             annoHash = {}
+
             #in case the empty label is the only option at an internal node
             if not node.name in space:
                 space[node.name] = [space["all"]]
 
             #minimum cost for this label over all children of this node
             allMin = float("inf")
-            #label giving the minimum cost at this node
+
             minLabel = ""
 
 
-            #for each possible label at a node
             for label in space[node.name]:
-
                 minTotal = 0
 
                 #for all children of the current node
@@ -239,13 +241,7 @@ def sankoff_bottomup(t,space):
                     #for each annotation
                     for annotation in anno:
                         #compute cost from label to annotation!
-                        #OLDOLDOLD
-                        # if not annotation == label:
-                        #     value = anno[annotation] + child.matrix[annotation][label]
-                        # else:
-                        #     value = anno[annotation]
-                        #NEWNEWNEW
-                        value = anno[annotation] + child.matrix[annotation][label]
+                        value = anno[annotation] + cost(label,annotation,edges,probs,node,alpha)
                         #if the cost is smaller than before, update minChild value
                         if value < minChild:
                             minChild = value
@@ -255,7 +251,7 @@ def sankoff_bottomup(t,space):
                 annoHash[label] = minTotal
                 #if current node is the root, we need to add the cost for this label in terms of weight at the root!
                 if node.is_root():
-                    minTotal = minTotal + node.rootmatrix[label]
+                    minTotal = minTotal + computeLabelWeight(label,edges,alpha,probs,node)
                 #if minimum cost for this label is smaller than before, set this as smallest label
                 if minTotal < allMin:
                     minLabel = label
@@ -265,7 +261,7 @@ def sankoff_bottomup(t,space):
     return t
 
 
-def sankoff_topdown(t):
+def sankoff_topdown(t,edges, probs, alpha):
     for node in t.traverse(strategy="preorder"):
         if node.is_root():
             final = node.minimumLabel
@@ -276,28 +272,64 @@ def sankoff_topdown(t):
             minAllCost = float("inf")
             minAllLabel = ""
             for anno in annotation:
-                minCost = annotation[anno] + node.matrix[anno][parentAssignment]
+                minCost = annotation[anno] + cost(parentAssignment,anno,edges,probs,node,alpha)
                 if minCost < minAllCost:
                     minAllCost = minCost
                     minAllLabel = anno
             node.add_feature("assignment",minAllLabel)
     return t
 
-def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
-    #print "Compute ancestral labels with SR..."
-    resolvedCCs = {}
+def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves):
+    print "Compute ancestral labels with SR..."
+
+    adjacencies = {}
     for cc in ccs:
+
         treecopy = tree.copy()
         #1) annotate each tree node except root with cost matrix
+
         for node in treecopy.traverse(strategy="postorder"):
             #annotate leafs by their only possible label (maximum number of adjacencies)
+
             if node.is_leaf():
-                lab = annotateleaves(node,cc,extant)
-                node.add_feature("annotation",{tuple(lab):0})
-                node.add_feature("minimumLabel",lab)
-                label = tuple(lab)
-                validAtNode[cc][node.name] = set()
-                validAtNode[cc][node.name].add(label)
+                #annotateleaves returns a hash: key=label, value=cost (which is zero for all leaves)
+                #if the leaves is extant, the hash will contain only one entry
+                #otherwise it will contain all potential labels at an ancient leaf
+                if not node.name in ancientLeaves:
+                    lab = annotateleaves(node,cc,extant)
+                    node.add_feature("annotation",{tuple(lab):0})
+
+                    #if the leaf is extant, we can already set the minimumLabel here
+                    #otherwise, we leaf this open
+                    node.add_feature("minimumLabel",lab)
+
+                    #add valid labels
+                    label = tuple(lab)
+                    validAtNode[cc][node.name] = set()
+                    validAtNode[cc][node.name].add(label)
+                else:
+                    #we have an ancient Leaf here! get all labels that are valid at this node for this cc
+                    valid_labels = validAtNode[cc][node.name]
+                    #for each validLabel, its cost are the sum of the weights of all absent adjacencies
+                    anno_hash = {}
+                    adjEdges = cc.edges()
+                    for lab in valid_labels:
+                        if not alpha == 0:
+                            cost = 0
+                            for adj in adjEdges:
+                                inside = False
+                                for n in lab:
+                                    if adj in n:
+                                        inside = True
+                                        continue
+                                if not inside:
+                                    cost = cost + probabilities[node.name][sortEdge(adj)]
+                            anno_hash.update({tuple(lab):int(cost)*alpha})
+                        else:
+                            anno_hash.update({tuple(lab):0})
+                    node.add_feature("annotation",anno_hash)
+
+
             if not node.is_root():
                 parent = node.up
                 #find all valid labels at node and at parent
@@ -314,14 +346,6 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
                     labelsParent = set()
                     labelsParent.add(tuple(validAtNode[cc]["all"]))
 
-                #compute cost matrix containing cost for each pair of labelsNode and labelsParent
-                costarr = {}
-                for labNode in labelsNode:
-                    costarr[tuple(labNode)]={}
-                    for parNode in labelsParent:
-                        costarr[tuple(labNode)][tuple(parNode)] = cost(parNode,labNode,cc.edges(),probabilities, node, alpha)
-
-                node.add_feature("matrix",costarr)
             elif node.is_root():
                 #find all valid labels at root
                 if node.name in validAtNode[cc]:
@@ -330,19 +354,33 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
                 else:
                     labelsNode = set()
                     labelsNode.add(tuple(validAtNode[cc]["all"]))
-                rootarr = {}
-                for labNode in labelsNode:
-                    rootarr[tuple(labNode)]= computeLabelWeight(labNode,cc.edges(),alpha,probabilities,node)
-                node.add_feature("rootmatrix",rootarr)
+
 
 
         #then compute bottom-up labeling for tree
-        annoTree = sankoff_bottomup(treecopy,validAtNode[cc])
+        annoTree = sankoff_bottomup(treecopy,validAtNode[cc], cc.edges(), probabilities, alpha)
 
         #then compute top-down labeling for tree
-        topDownTree = sankoff_topdown(annoTree)
-        resolvedCCs[cc] = topDownTree
-    return resolvedCCs
+        annotatedTree = sankoff_topdown(annoTree, cc.edges(), probabilities, alpha)
+
+        for node in annotatedTree.traverse():
+            if not node.is_leaf() or node.name in ancientLeaves:
+                label = node.assignment
+                labelAdj = set()
+                if len(label) == 1:
+                    if not "-" in label:
+                        labelAdj.add(label[1])
+                else:
+                    for elem in label:
+                        if not "-" in elem:
+                            labelAdj.add(elem[1])
+                if labelAdj:
+                    if node.name in adjacencies:
+                        adjacencies[node.name] += list(labelAdj)
+                    else:
+                        adjacencies[node.name] = list(labelAdj)
+
+    return adjacencies
 
 def computeLabelWeight(label,edges,alpha, probs,node):
     adj = set()
@@ -401,14 +439,10 @@ def outputReconstructedAdjacencies(reconstrAdj,out):
     for node in reconstrAdj:
         file.write(">"+node+" "+str(len(reconstrAdj[node]))+"\n")
         for adj in reconstrAdj[node]:
-            file.write(str(adj)+"\n")
+            file.write(node+" "+str(adj)+"\n")
     file.close()
 
-def sankoff_bottomup_sampling(t,space):
-    """
-
-    :rtype : tree
-    """
+def sankoff_bottomup_sampling(t,space, edges, probs, alpha):
     for node in t.traverse(strategy="postorder"):
         #get annotation for all children of node
         if not node.is_leaf():
@@ -443,7 +477,7 @@ def sankoff_bottomup_sampling(t,space):
                     #for each annotation
                     for annotation in anno:
                         #compute cost from label to annotation!
-                        value = anno[annotation] + child.matrix[annotation][label]
+                        value = anno[annotation] + cost(label,annotation,edges,probs,node,alpha)
                         #if the cost is smaller than before, update minChild value
                         if value < minChild:
                             minChild = value
@@ -460,7 +494,7 @@ def sankoff_bottomup_sampling(t,space):
                 annoHash[label] = minTotal
                 #if current node is the root, we need to add the cost for this label in terms of weight at the root!
                 if node.is_root():
-                    minTotal = minTotal + node.rootmatrix[label]
+                    minTotal = minTotal + computeLabelWeight(label,edges,alpha,probs,node)
                 #if minimum cost for this label is smaller than before, set this as smallest label
                 if minTotal < allMin:
                     minLabel = [label]
@@ -474,18 +508,12 @@ def sankoff_bottomup_sampling(t,space):
     return t
 
 
-def sankoff_topdown_sampling(t):
+def sankoff_topdown_sampling(t, edges, probs, alpha):
     for node in t.traverse(strategy="preorder"):
         if node.is_root():
             #sum NumberOfOptimals for all optimal labels at root
             minLabels = node.minimumLabel
             sumOpt = 0
-            optLabelArray = []
-            # for lab in minLabels:
-            #     sumOpt = sumOpt + node.numberOfOptimals[lab]
-            #     for i in range(0,node.numberOfOptimals[lab]):
-            #         optLabelArray.append(lab)
-            # draw = random.randint(1, sumOpt)
 
 
             for lab in minLabels:
@@ -500,8 +528,6 @@ def sankoff_topdown_sampling(t):
                     final = lab
                     break
 
-
-            #final = optLabelArray[draw-1]
             node.add_feature("assignment",final)
         else:
             parentAssignment = node.up.assignment
@@ -509,11 +535,7 @@ def sankoff_topdown_sampling(t):
             minAllCost = float("inf")
             minAllLabel = []
             for anno in annotation:
-                # if anno == parentAssignment:
-                #     minCost = annotation[parentAssignment]
-                # else:
-                #     minCost = annotation[anno] + node.matrix[anno][parentAssignment]
-                minCost = annotation[anno] + node.matrix[anno][parentAssignment]
+                minCost = annotation[anno] + cost(parentAssignment,anno,edges,probs,node,alpha)
                 if minCost < minAllCost:
                     minAllCost = minCost
                     minAllLabel = [anno]
@@ -521,7 +543,6 @@ def sankoff_topdown_sampling(t):
                     minAllLabel.append(anno)
             #draw from all optimal annotations like at the root
             sumOpt = 0
-            optLabelArray = []
             for lab in minAllLabel:
                 sumOpt = sumOpt + node.numberOfOptimals[lab]
 
@@ -538,22 +559,50 @@ def sankoff_topdown_sampling(t):
             node.add_feature("assignment",final)
     return t
 
-def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
-    #print "Compute ancestral labels with SR..."
-    resolvedCCs = {}
+def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves):
+    print "Compute ancestral labels with SR..."
+
+    adjacencies = {}
     for cc in ccs:
         treecopy = tree.copy()
         #1) annotate each tree node except root with cost matrix
         for node in treecopy.traverse(strategy="postorder"):
             #annotate leafs by their only possible label (maximum number of adjacencies)
             if node.is_leaf():
-                lab = annotateleaves(node,cc,extant)
-                node.add_feature("annotation",{tuple(lab):0})
-                node.add_feature("minimumLabel",[lab])
-                node.add_feature("numberOfOptimals",{tuple(lab):1})
-                label = tuple(lab)
-                validAtNode[cc][node.name] = set()
-                validAtNode[cc][node.name].add(label)
+                if not node.name in ancientLeaves:
+                    lab = annotateleaves(node,cc,extant)
+                    node.add_feature("annotation",{tuple(lab):0})
+                    node.add_feature("minimumLabel",[lab])
+                    node.add_feature("numberOfOptimals",{tuple(lab):1})
+                    label = tuple(lab)
+                    validAtNode[cc][node.name] = set()
+                    validAtNode[cc][node.name].add(label)
+                else:
+                    #we have an ancient Leaf here! get all labels that are valid at this node for this cc
+                    valid_labels = validAtNode[cc][node.name]
+                    #for each validLabel, its cost are the sum of the weights of all absent adjacencies
+                    anno_hash = {}
+                    numberOptimals = {}
+                    adjEdges = cc.edges()
+                    for lab in valid_labels:
+                        if not alpha == 0:
+                            cost = 0
+                            for adj in adjEdges:
+                                inside = False
+                                for n in lab:
+                                    if adj in n:
+                                        inside = True
+                                        continue
+                                if not inside:
+                                    cost = cost + probabilities[node.name][sortEdge(adj)]
+                            anno_hash.update({tuple(lab):int(cost)*alpha})
+
+                        else:
+                            anno_hash.update({tuple(lab):0})
+                        numberOptimals.update({tuple(lab):1})
+                    node.add_feature("annotation",anno_hash)
+                    node.add_feature("numberOfOptimals",numberOptimals)
+
             if not node.is_root():
                 parent = node.up
                 #find all valid labels at node and at parent
@@ -570,14 +619,6 @@ def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
                     labelsParent = set()
                     labelsParent.add(tuple(validAtNode[cc]["all"]))
 
-                #compute cost matrix containing cost for each pair of labelsNode and labelsParent
-                costarr = {}
-                for labNode in labelsNode:
-                    costarr[tuple(labNode)]={}
-                    for parNode in labelsParent:
-                        costarr[tuple(labNode)][tuple(parNode)] = cost(parNode,labNode,cc.edges(),probabilities, node,alpha)
-
-                node.add_feature("matrix",costarr)
             elif node.is_root():
                 #find all valid labels at root
                 if node.name in validAtNode[cc]:
@@ -586,14 +627,26 @@ def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha):
                 else:
                     labelsNode = set()
                     labelsNode.add(tuple(validAtNode[cc]["all"]))
-                rootarr = {}
-                for labNode in labelsNode:
-                    rootarr[tuple(labNode)]= computeLabelWeight(labNode,cc.edges(),alpha,probabilities,node)
-                node.add_feature("rootmatrix",rootarr)
 
         #then compute bottom-up labeling for tree
-        annoTree = sankoff_bottomup_sampling(treecopy,validAtNode[cc])
+        annoTree = sankoff_bottomup_sampling(treecopy,validAtNode[cc], cc.edges(), probabilities, alpha)
         #then compute top-down labeling for tree
-        topDownTree = sankoff_topdown_sampling(annoTree)
-        resolvedCCs[cc] = topDownTree
-    return resolvedCCs
+        annotatedTree = sankoff_topdown_sampling(annoTree,cc.edges(),probabilities,alpha)
+        for node in annotatedTree.traverse():
+            if not node.is_leaf() or node.name in ancientLeaves:
+                label = node.assignment
+                labelAdj = set()
+                if len(label) == 1:
+                    if not "-" in label:
+                        labelAdj.add(label[1])
+                else:
+                    for elem in label:
+                        if not "-" in elem:
+                            labelAdj.add(elem[1])
+                if labelAdj:
+                    if node.name in adjacencies:
+                        adjacencies[node.name] += list(labelAdj)
+                    else:
+                        adjacencies[node.name] = list(labelAdj)
+
+    return adjacencies

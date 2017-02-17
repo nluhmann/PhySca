@@ -141,7 +141,7 @@ Structure of weighted_internal_adjacencies:
 
 ```
 Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
-               [-internal <internal>] [-x <x>] [-s <Z>] [-pN <processnumber>] [-out <output>]
+               [-internal <internal>] [-x <x>] [-s <Z>] [-pN <processnumber>] [-out <output>] [-skip <int>]
 
 ```
 
@@ -157,14 +157,16 @@ Main.py [-h] [-tree <treefile>] [-alpha <alpha>] [-extant <extant>]
   *-internal \<internal>*	    file with precomputed weighted adjacencies for
                         internal nodes
 
-  *-x \<x>*                  assign potential adjacencies by weight threshold,
+  *-x \<x>*                  (optional) assign potential adjacencies by weight threshold,
                         [0,1]
 
-  *-s , --sampling \<Z>*		sample Z solutions for given set of parameters
+  *-s , --sampling \<Z>*		(optional) sample Z solutions for given set of parameters
 
-  *-pN, --processNumber \<processnumber>*		number of processes used for sampling. Max: [number of cpu], default=1
+  *-pN, --processNumber \<processnumber>*		(optional) number of processes used for sampling. Max: [number of cpu], default=1
 
-  *-out , --output \<output>*		output directory, current directory as default
+  *-out , --output \<output>*		(optional) output directory, current directory as default
+
+  *-skip , --skip \<int>*       (optional) skip all connected components that consist of more edges than <int>. Note that these adjacencies will not be reconstructed.
 
 #### Input files (precomputed by weightingWithDeClone)
 

@@ -1,20 +1,19 @@
-__author__ = 'Nina'
+__author__ = 'nluhmann'
 
 
 #scaffold reconstructed adjacencies at each internal node
-
-
-
-
 def scaffoldAdjacencies(reconstructedAdj):
-    #print "Scaffolding..."
+
     scaffoldsPerNode = {}
     for node in reconstructedAdj:
         adjacencies = reconstructedAdj[node]
+
         #key: (leftmost marker in scaffold, rightmost marker in scaffold), value: [marker]
         scaffold = {}
+
         for adj in adjacencies:
             inserted = False
+
             #check if adjacency can extend an existing scaffold, extend only one scaffold if there are two possibilities
             for scaff in scaffold.keys():
                 if adj[0] == scaff[0]:
@@ -28,12 +27,15 @@ def scaffoldAdjacencies(reconstructedAdj):
                 elif adj[0] == scaff[1]:
                     #remove and return current scaffold
                     markerList = scaffold.pop(scaff)
+
                     #extend markerList with other extremity of the current adjacency
                     right = getOtherExtremity(adj[1])
                     markerList.append(adj[1])
                     markerList.append(right)
+
                     #save new scaffold with updated key
                     scaffold[(scaff[0],right)] = markerList
+
                     #adjacency has been inserted
                     inserted = True
                     #get out as soon as one scaffold has been extended
@@ -43,6 +45,7 @@ def scaffoldAdjacencies(reconstructedAdj):
                     other = getOtherExtremity(adj[0])
                     markerList.insert(0, adj[0])
                     markerList.insert(0,other)
+
                     #save new scaffold with updated key
                     scaffold[(other,scaff[1])] = markerList
                     inserted = True
@@ -52,6 +55,7 @@ def scaffoldAdjacencies(reconstructedAdj):
                     other = getOtherExtremity(adj[0])
                     markerList.append(adj[0])
                     markerList.append(other)
+
                     #save new scaffold with updated key
                     scaffold[(scaff[0],other)] = markerList
                     inserted = True
@@ -219,8 +223,6 @@ def sanityCheckScaffolding(undoubledScaffolds):
                 if "-" in str(elem):
                     elem = elem[1:]
                 if elem in testHash:
-                    #print node
-                    #print elem
                     log+=str(node)+"\n"
                     log+=str(elem)+"\n"
                 else:

@@ -1,4 +1,7 @@
 import sys
+
+
+
 def putFilesTogether(dictionaries):
     statistic = {}
     for dic in dictionaries:

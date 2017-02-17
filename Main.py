@@ -2,11 +2,12 @@ __author__ = 'nluhmann'
 from ete2 import Tree
 import getAdjacencies
 import globalAdjacencyGraph
-import SR
+import SR2
 import scaffolding
 import argparse
 import time
 import multiprocessing
+import sys
 
 from calculate_SCJ import calculate_SCJ
 import runSample
@@ -17,21 +18,24 @@ statistic_path='./statistic_allSampled_ReconstructedAdjacencies'
 
 parser = argparse.ArgumentParser(description="PhySca")
 parser.add_argument("-tree", type=str, help="tree file in newick or nhx format")
-parser.add_argument("-alpha", type=float, help="alpha parameter in objective function, [0,1]",default=0.0)
+parser.add_argument("-alpha", type=float, help="alpha parameter in objective function, [0,1] (default: 0)",default=0.0)
 parser.add_argument("-extant",type=str,help="file with precomputed weighted adjacencies for external nodes")
 parser.add_argument("-internal",type=str,help="file with precomputed weighted adjacencies for internal nodes")
-parser.add_argument("-x", type=float, help="Assign potential adjacencies by weight threshold, [0,1]",default=0.0)
-parser.add_argument("-s", "--sampling", type=int, help="sample X solutions for given set of parameters")
-parser.add_argument("-pN", "--processNumber", type=int, help="number of processes used for sampling. Max: [number of cpu]",default=1)
+parser.add_argument("-x", type=float, help="Filter potential adjacencies by weight threshold, [0,1] (default: no filtering)",default=-1)
+parser.add_argument("-s", "--sampling", type=int, help="sample [INT] co-optimal solutions for given set of parameters")
+parser.add_argument("-pN", "--processNumber", type=int, help="number of processes used for parallel sampling. Max: [number of cpu] (default: 1)",default=1)
 parser.add_argument("-out", "--output", type=str, help="specify output directory, current directory as default", default=".")
-parser.add_argument("-sk", "--skip_first", action='store_const', const=True, help="boolean, for skipping the 0th sampling")
+parser.add_argument("-skip", "--skip", type=int, help="skip connected components that consist of more edges than [INT] (default: no skipping)",default=-1)
+parser.add_argument("-sk", "--skip_first", action='store_const', const=False, help="boolean, for skipping the 0th sampling")
 parser.add_argument("-sc", "--start_counting", type=int, help="specifies the starting number for enumerating the samples",default=0)
 args = parser.parse_args()
 
 t0 = time.time()
 
 if not args.internal or not args.extant or not args.tree :
-    parser.error('Error: wrong parameter number or usage.')
+    #parser.error('Error: wrong parameter number or usage.')
+    parser.print_help()
+    sys.exit(1)
 
 # read tree file
 file = open(args.tree, "r")
@@ -40,10 +44,7 @@ file.close()
 tree = Tree(newick, format=1)
 print tree.get_ascii()
 print " "
-# from input file weighted_extant_adjacencies:
-# create dict extantAdjacenies, containing external nodes
-# create dict adjacencyProbs from input file
-# create dict  extantAdjacencies_species_adj
+
 threshold=float(args.x)
 
 adjacencyProbs={}
@@ -59,7 +60,6 @@ extantAdjacencies_species_adj={}
 f=open(args.extant,'r')
 line=f.readline()
 while line:
-    #>species    (AdjL,AdjR)
     spec_adj=line.split('\t')
     species=spec_adj[0][1:]
     adj_L_R = spec_adj[1].strip().split(',')
@@ -91,16 +91,25 @@ while line:
 f.close()
 
 # create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
-#fill adjacencyProbs with input from file weighted_internal_adjacencies
+# fill adjacencyProbs with input from file weighted_internal_adjacencies
 
 nodesPerAdjacency={}
 #structure  (AdjL,AdjR):set(node)
+filteredAdjacencies={}
+ancientLeaves = set()
 f=open(args.internal,'r')
 line=f.readline()
 while line:
-    #>species    (AdjL,AdjR)    weight
     spec_adj_weight=line.split('\t')
     species=str(spec_adj_weight[0][1:])
+
+    #check if we have an ancient leaf
+    nodes = tree.search_nodes(name=species)
+    if nodes[0].is_leaf():
+        ancientLeaves.add(species)
+
+
+
     adj_L_R=spec_adj_weight[1].split(',')
     adj_L=adj_L_R[0][1:]
     adj_R=adj_L_R[1][:-1]
@@ -117,6 +126,13 @@ while line:
             spec=set()
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
+    else:
+        tup = (weight,adj)
+        if species in filteredAdjacencies:
+            filteredAdjacencies[species].append(tup)
+        else:
+            filteredAdjacencies[species]=[]
+            filteredAdjacencies[species].append(tup)
     #filling adjacencyProbs with internal nodes
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
@@ -131,18 +147,18 @@ f.close()
 dict_SCJ={}
 
 #compute CCs in global adjacency graph
-ccs = globalAdjacencyGraph.createGraph(extantAdjacencies,nodesPerAdjacency)
+ccs, removedAdjacencies, nodesPerAdjacency = globalAdjacencyGraph.createGraph(nodesPerAdjacency,args.skip)
+#removedWeights = globalAdjacencyGraph.getWeightsForRemoved(removedAdjacencies,adjacencyProbs)
 if (not args.skip_first):
     conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
     globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
 
-    jointLabels, first = SR.enumJointLabelings(ccs)
-    validLabels, validAtNode = SR.validLabels(jointLabels,first)
+    jointLabels, first = SR2.enumJointLabelings(ccs)
+    validLabels, validAtNode = SR2.validLabels(jointLabels,first)
 
-    topDown = SR.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha)
+    reconstructedAdj = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha, ancientLeaves)
 
-    reconstructedAdj = SR.reconstructedAdjacencies(topDown)
-    SR.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
+    SR2.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
     for node in reconstructedAdj:
         print node
         print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
@@ -157,9 +173,9 @@ if (not args.skip_first):
     reconstructedMarker = set()
     for adj in extantAdjacencies:
         #each adjacency equals to markerpairs
-        adj_list=[ adj[0], adj[1] ]
+        adj_list=[adj[0], adj[1]]
         for adjpart in adj_list:
-            if (adjpart % 2 ==0):
+            if adjpart % 2 == 0:
                 markerId=adjpart/2
             else:
                 markerId=(adjpart+1)/2
@@ -167,7 +183,6 @@ if (not args.skip_first):
 
 
     for node in undoubled:
-        print node
         markerCounter = 0
         for scaffold in undoubled[node]:
             first = scaffold[0]
@@ -186,9 +201,10 @@ if (not args.skip_first):
         print node + " number of singleton scaffolds (not reconstructed marker): " + str(notReconstructedMarkerCount)
         print node + " number of scaffolds: " + str(allScaffoldCount)
 
-        #calculate SCJ-distance for unsampled solution
-        scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
-        dict_SCJ.update({'Unsampled':scj_unsampled})
+    #calculate SCJ-distance for unsampled solution
+    scj_unsampled=calculate_SCJ(tree, reconstructedAdj, extantAdjacencies_species_adj)
+    dict_SCJ.update({'Unsampled':scj_unsampled})
+    print "Single-Cut-or-Join-Distance: " + str(scj_unsampled)+'\n'
 
 print time.time() - t0, "seconds process time"
 t_sampling=time.time()
@@ -224,7 +240,7 @@ if args.sampling and  __name__ == '__main__':
     pool = multiprocessing.Pool(processes=samplesize)
     #create args.sampling tasks
     tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
-              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount) for i in range(args.start_counting, args.sampling+args.start_counting))
+              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount,ancientLeaves) for i in range(args.start_counting, args.sampling+args.start_counting))
     #execute the sampling tasks
     results = pool.map_async(runSample.runSample, tasks)
     #close pool so no more tasks can be handed over to the workers

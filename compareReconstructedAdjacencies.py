@@ -1,5 +1,11 @@
-__author__ = 'Nina'
+__author__ = 'nluhmann'
 import sys
+
+#Helper script to compare reconstructed adjacencies in two outfiles, e.g. different values of alpha
+
+
+
+
 
 file1 = sys.argv[1]
 file2 = sys.argv[2]
