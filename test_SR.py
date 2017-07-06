@@ -16,13 +16,13 @@ class TestSR(TestCase):
     graph.add_edge("f","e",species=set("1"))
 
 
-    def test_enumJointLabelings(self):
-        #print nx.maximal_matching(self.graph)
-        #print nx.max_weight_matching(self.graph)
-        joint,first = SR2.enumJointLabelings([self.graph])
-        TestCase.assertEqual(self,len(joint[self.graph]),15)
-        valid, validAtNode = SR.validLabels(joint,first)
-        TestCase.assertEqual(self,len(valid[self.graph]),8)
+    # def test_enumJointLabelings(self):
+    #     #print nx.maximal_matching(self.graph)
+    #     #print nx.max_weight_matching(self.graph)
+    #     joint,first = SR2.enumJointLabelings([self.graph])
+    #     TestCase.assertEqual(self,len(joint[self.graph]),15)
+    #     valid, validAtNode = SR2.validLabels(joint,first)
+    #     TestCase.assertEqual(self,len(valid[self.graph]),8)
 
 
     # def test_cost(self):

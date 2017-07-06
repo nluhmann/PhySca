@@ -1,6 +1,5 @@
 __author__ = 'nluhmann'
 from ete2 import Tree
-import getAdjacencies
 import globalAdjacencyGraph
 import SR2
 import scaffolding
@@ -102,7 +101,6 @@ line=f.readline()
 while line:
     spec_adj_weight=line.split('\t')
     species=str(spec_adj_weight[0][1:])
-
     #check if we have an ancient leaf
     nodes = tree.search_nodes(name=species)
     if nodes[0].is_leaf():
@@ -149,7 +147,7 @@ dict_SCJ={}
 #compute CCs in global adjacency graph
 ccs, removedAdjacencies, nodesPerAdjacency = globalAdjacencyGraph.createGraph(nodesPerAdjacency,args.skip)
 #removedWeights = globalAdjacencyGraph.getWeightsForRemoved(removedAdjacencies,adjacencyProbs)
-if (not args.skip_first):
+if not args.skip_first:
     conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
     globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
 
@@ -188,7 +186,7 @@ if (not args.skip_first):
             first = scaffold[0]
             last = scaffold[-1]
             if not first == last:
-                markerCounter = markerCounter + len(scaffold)
+                markerCounter += len(scaffold)
             else:
                 markerCounter = markerCounter + len(scaffold)-1
         print node+" number of reconstructed undoubled marker in scaffolds: "+str(markerCounter)
@@ -223,7 +221,7 @@ if args.sampling and  __name__ == '__main__':
         # each adjacency equals to markerpairs
         adj_list = [adj[0], adj[1]]
         for adjpart in adj_list:
-            if (adjpart % 2 == 0):
+            if adjpart % 2 == 0:
                 markerId = adjpart / 2
             else:
                 markerId = (adjpart + 1) / 2

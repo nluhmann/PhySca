@@ -14,10 +14,7 @@ def parse_NEWICK_to_nhx(file,ignore_weights,minimal_branch_length=0.0):
     numberUnamedNodes = 0  # current unamed internal nodes
     numberOfSpecies = -1  # numberOfSpecies is equal to the number of colons
     nameStartPos = 0  # startposition of the last species name
-    nameEndPos = 0  # endposition of the last species name
     weightStartPos=0 #startposition of the last weight
-    weightEndPos=0 #endposition of the lastweight
-    lastSpeciesName = ''  # name of the current species
     isLeaf = False  # current species is a leaf or not
     newick_signs = [';', ',', '(', ')', ':']  # signs which have a distinct function in the NEWICK-Format
     isWeight=False
@@ -313,7 +310,7 @@ def read_Marker_file(marker):
             chrom = line.rstrip("\n")[2:]
         elif not line == "\n":
             order = line.rstrip("\n")[:-2].split(" ")
-            markerCount = markerCount + len(order)
+            markerCount += len(order)
             chromosomes[chrom] = order
     species_marker_order[species] = chromosomes
     print species

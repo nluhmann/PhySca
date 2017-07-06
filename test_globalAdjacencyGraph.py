@@ -1,5 +1,4 @@
 from unittest import TestCase
-import getAdjacencies
 import globalAdjacencyGraph
 from ete2 import Tree
 import networkx as nx
@@ -8,22 +7,13 @@ __author__ = 'Nina'
 
 
 class TestGraph(TestCase):
-  chrom = {}
-  chrom["one"] = ["3","4","5","6","7","8"]
-  chrom["two"] = ["1","2"]
-  species = {}
-  species["A"] = chrom
-  chrom = {}
-  chrom["one"] = ["-4","5","-3","6","7","8"]
-  chrom["two"] = ["1","2"]
+  chrom = {"one": ["3", "4", "5", "6", "7", "8"], "two": ["1", "2"]}
+  species = {"A": chrom}
+  chrom = {"one": ["-4", "5", "-3", "6", "7", "8"], "two": ["1", "2"]}
   species["B"] = chrom
-  chrom = {}
-  chrom["one"] = ["3","4","5","6","7","8"]
-  chrom["two"] = ["1","2"]
+  chrom = {"one": ["3", "4", "5", "6", "7", "8"], "two": ["1", "2"]}
   species["E"] = chrom
-  chrom = {}
-  chrom["one"] = ["4","5","-3","6","7","8"]
-  chrom["two"] = ["1","2"]
+  chrom = {"one": ["4", "5", "-3", "6", "7", "8"], "two": ["1", "2"]}
   species["D"] = chrom
 
   adj = getAdjacencies.findAdjacencies(species)

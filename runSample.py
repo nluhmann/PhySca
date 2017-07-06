@@ -60,7 +60,7 @@ def runSample(params):
                 first = scaffold[0]
                 last = scaffold[-1]
                 if not first == last:
-                    markerCounter = markerCounter + len(scaffold)
+                    markerCounter += len(scaffold)
                 else:
                     markerCounter = markerCounter + len(scaffold) - 1
             outLog+= str(node) + " number of reconstructed undoubled marker in scaffolds: " + str(markerCounter)+'\n'
@@ -78,5 +78,5 @@ def runSample(params):
         outLog+="Single-Cut-or-Join-Distance: " + str(scj)+'\n'
         dict_SCJ.update({'Sample_' + str(i): scj})
 
-        return (allSampleReconstructionStatistic,dict_SCJ,outLog)
+        return allSampleReconstructionStatistic,dict_SCJ,outLog
 

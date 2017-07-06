@@ -170,7 +170,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
                 cost = cost + (alpha*weight) + ((1-alpha)/edgeLength)
         elif edge in childAdj:
             if not edge in parentAdj:
-                cost = cost + ((1-alpha)/edgeLength)
+                cost += (1 - alpha) / edgeLength
         else:
             if node.name in probs:
                 if edge in probs[node.name]:
@@ -181,7 +181,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
                     weight = 0
             else:
                 weight = 0
-            cost = cost + (alpha*weight)
+            cost += alpha * weight
 
     return cost
 
@@ -246,12 +246,12 @@ def sankoff_bottomup(t,space, edges, probs, alpha):
                         if value < minChild:
                             minChild = value
                     #add minimum cost for this child to the total cost
-                    minTotal = minTotal + minChild
+                    minTotal += minChild
                 #save minimum cost for this label over all children
                 annoHash[label] = minTotal
                 #if current node is the root, we need to add the cost for this label in terms of weight at the root!
                 if node.is_root():
-                    minTotal = minTotal + computeLabelWeight(label,edges,alpha,probs,node)
+                    minTotal += computeLabelWeight(label, edges, alpha, probs, node)
                 #if minimum cost for this label is smaller than before, set this as smallest label
                 if minTotal < allMin:
                     minLabel = label
@@ -404,7 +404,7 @@ def computeLabelWeight(label,edges,alpha, probs,node):
                         weight = 0
             else:
                 weight = 0
-            cost = cost + (alpha*weight)
+            cost += alpha * weight
 
     return cost
 
@@ -485,16 +485,16 @@ def sankoff_bottomup_sampling(t,space, edges, probs, alpha):
                         elif value == minChild:
                             childMinLabels.append(annotation)
                     #add minimum cost for this child to the total cost
-                    minTotal = minTotal + minChild
+                    minTotal += minChild
                     #sum over optimal solutions in all annotations giving the minimum cost
                     for a in childMinLabels:
                         optSolSum = optSolSum + child.numberOfOptimals[a]
-                    optSolTotal = optSolTotal * optSolSum
+                    optSolTotal *= optSolSum
                 #save minimum cost for this label over all children
                 annoHash[label] = minTotal
                 #if current node is the root, we need to add the cost for this label in terms of weight at the root!
                 if node.is_root():
-                    minTotal = minTotal + computeLabelWeight(label,edges,alpha,probs,node)
+                    minTotal += computeLabelWeight(label, edges, alpha, probs, node)
                 #if minimum cost for this label is smaller than before, set this as smallest label
                 if minTotal < allMin:
                     minLabel = [label]

@@ -34,7 +34,7 @@ def readFile(filePath):
     while line:
         split=line.split("\t")
         species=split[0]
-        if (species != ">Header:"):
+        if species != ">Header:":
             gene=split[1]
             number=int(split[2].strip())
             if species in dic:

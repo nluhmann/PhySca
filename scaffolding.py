@@ -198,7 +198,7 @@ def outputUndoubledScaffolds(scaffolds,output):
         for scaff in scaffolds[node]:
             file.write("#"+str(counter)+"\n")
             file.write(" ".join(str(x) for x in scaff)+" $\n")
-            counter = counter + 1
+            counter += 1
     file.close()
 
 def outputScaffolds(scaffolds,output):
@@ -209,7 +209,7 @@ def outputScaffolds(scaffolds,output):
         for scaff in scaffolds[node]:
             file.write("#"+str(counter)+"\n")
             file.write(" ".join(str(x) for x in scaffolds[node][scaff])+" $\n")
-            counter = counter + 1
+            counter += 1
     file.close()
 
 
@@ -229,8 +229,3 @@ def sanityCheckScaffolding(undoubledScaffolds):
                     testHash[elem] = 1
     return log
 
-def compareAdjacencyLists(list1, list2):
-    set1 = set(list1)
-    set2 = set(list1)
-    diff1 = set1.difference(set2)
-    diff2 = set2.difference(set1)

@@ -35,7 +35,7 @@ def createGraph(ancestral,skip):
     numberOfLabels = 1
     for node in nx.nodes(graphs[0]):
         neighbors = nx.neighbors(graphs[0],node)
-        numberOfLabels = numberOfLabels * len(neighbors)
+        numberOfLabels *= len(neighbors)
 
     complex = 7 * math.pow(numberOfLabels,2)
     print "Number of Labels: "+str(numberOfLabels)
