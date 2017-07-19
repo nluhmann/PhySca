@@ -318,6 +318,49 @@ def read_Marker_file(marker):
     file.close()
     return species_marker_order
 
+
+# SE: here it is easy to find all potential adjacencies by computing the global set of adjacencies,
+# then compare for each set of extant adjacencies and check if a potential adjacency induces a conflict
+def identify_potential_extant_adjacencies(extantAdjacencies):
+    potential_adjacencies = {}
+
+    # extant Adjacencies: keys: (left marker, right marker), value: [(species,chromosome),...]
+    # collect all different adjacencies present in any extant adjacency
+    all_present = {}
+    species_present = {}
+    for elem in extantAdjacencies.keys():
+        all_present[elem] = 1
+        species_present = list(set(species_present).union(extantAdjacencies[elem]))
+
+    # check for each adjacency, if it can be a potential adjacency for all species not present
+    # for this, check all other adjacencies that include one of the extremities and check if they are present in the species
+    for adj in extantAdjacencies.keys():
+        species_missing = [x for x in species_present if x not in extantAdjacencies[elem]]
+        for spec in species_missing:
+            first_extrem = adj[0]
+            second_extrem = adj[1]
+            for elem in extantAdjacencies.keys():
+                if not elem == adj:
+                    if first_extrem in elem or second_extrem in elem:
+                        if spec in extantAdjacencies[elem]:
+                            break
+                        else:
+                            if adj in potential_adjacencies.keys():
+                                potential_adjacencies[adj].append(spec)
+                            else:
+                                potential_adjacencies[adj] = []
+                                potential_adjacencies[adj].append(spec)
+
+    # write output
+    file = open(listOfPotentialExtant, 'w')
+    for adj in potential_adjacencies:
+        for spec in potential_adjacencies[adj]:
+            file.write('>' + str(spec) + '\t' + str(adj) + '\n')
+    file.close()
+
+    return potential_adjacencies
+
+
 #parsing the input parameters
 parser = argparse.ArgumentParser(description='Weights given tree in nhx-format with DeClone. Also converts tree in NEWICK-format into tree in nhx-format')
 groupFormat = parser.add_mutually_exclusive_group(required=True)
@@ -340,7 +383,7 @@ nhxFileOut = args.output+'/nhx_tree'
 listOfExtWeightOut =  args.output+'/extant_adjacencies'
 listOfIntWeightOut =  args.output+'/weighted_internal_adjacencies'
 singleLeafAdjOut =  args.output+'/single_leaf_adjacencies'
-
+listOfPotentialExtant = args.output+'/potential_extant_adjacencies'
 
 
 if args.nhx_Tree:
@@ -348,16 +391,18 @@ if args.nhx_Tree:
     listOfInternalNodes=get_internal_nodes_from_treefile(':',args.nhx_Tree)
     if args.adjacencies:
         extantAdjacencies=readAdjacencyFile(args.adjacencies)
+        identify_potential_extant_adjacencies(extantAdjacencies)
         deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
     elif args.markers:
         extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
+        identify_potential_extant_adjacencies(extantAdjacencies)
         deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
     else:
         parser.error('Error: wrong parameter number or usage.')
 if args.Newick:
 
     if args.ignore_weights:
-        parse_NEWICK_to_nhx(args.Newick, True,args.set_minimum)
+        parse_NEWICK_to_nhx(args.Newick,True,args.set_minimum)
         listOfInternalNodes=get_internal_nodes_from_treefile('[',nhxFileOut) #when no weights given, after a node's name comes a [
     else:
         parse_NEWICK_to_nhx(args.Newick,False,args.set_minimum)
@@ -367,9 +412,11 @@ if args.Newick:
     else:
         if args.adjacencies:
             extantAdjacencies=readAdjacencyFile(args.adjacencies)
+            identify_potential_extant_adjacencies(extantAdjacencies)
             deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, nhxFileOut)
         elif args.markers:
             extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
+            identify_potential_extant_adjacencies(extantAdjacencies)
             deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes,nhxFileOut)
         else:
             parser.error('Error: wrong parameter number or usage.')
@@ -378,6 +425,5 @@ if not args.adjacencies and not args.markers:
     parser.error('Error: wrong parameter number or usage.')
 if not args.nhx_Tree and not args.Newick:
     parser.error('Error: wrong parameter number or usage.')
-
 
 

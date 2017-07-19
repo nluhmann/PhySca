@@ -155,6 +155,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
     #TODO edge Length
     edgeLength = 1
     for edge in edges:
+        #edge is present in parent but lost in child
         if edge in parentAdj:
             if not edge in childAdj:
                 if node.name in probs:
@@ -168,9 +169,11 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
                     weight = 0
 
                 cost = cost + (alpha*weight) + ((1-alpha)/edgeLength)
+        #edge is gained in child
         elif edge in childAdj:
             if not edge in parentAdj:
                 cost += (1 - alpha) / edgeLength
+        #edge is absent both in parent in child
         else:
             if node.name in probs:
                 if edge in probs[node.name]:
@@ -186,6 +189,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
     return cost
 
 
+# SE: here, one leaf is annotated with one label, according to presence or absence of adjacency in the extant adjacencies
 def annotateleaves(leaf,cc,extant):
 
     nodes = cc.nodes()

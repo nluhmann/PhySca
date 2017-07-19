@@ -19,6 +19,7 @@ parser = argparse.ArgumentParser(description="PhySca")
 parser.add_argument("-tree", type=str, help="tree file in newick or nhx format")
 parser.add_argument("-alpha", type=float, help="alpha parameter in objective function, [0,1] (default: 0)",default=0.0)
 parser.add_argument("-extant",type=str,help="file with precomputed weighted adjacencies for external nodes")
+parser.add_argument("-pot_extant",type=str,help="file with potential non-conflicting adjacencies for external nodes")
 parser.add_argument("-internal",type=str,help="file with precomputed weighted adjacencies for internal nodes")
 parser.add_argument("-x", type=float, help="Filter potential adjacencies by weight threshold, [0,1] (default: no filtering)",default=-1)
 parser.add_argument("-s", "--sampling", type=int, help="sample [INT] co-optimal solutions for given set of parameters")
@@ -52,10 +53,14 @@ adjacencyProbs={}
 extantAdjacencies={}
 #structure {(AdjL,AdjR):set([node,node,..]),..}
 
+potentialExtantAdjacencies={}
+#structure {(AdjL,AdjR):set([node,node,..]),..}
+
 extantAdjacencies_species_adj={}
 #structure {node:set([(AdjL,AdjR),..]),..}
 
 #fill dictionaries with input from weighted_extant_adjacencies
+# SE: so far, here we only store all observed extant adjacencies
 f=open(args.extant,'r')
 line=f.readline()
 while line:
@@ -89,9 +94,37 @@ while line:
     line=f.readline()
 f.close()
 
+
+# SE: read all potential adjacencies into a separate hash
+f=open(args.pot_extant,'r')
+for line in f:
+    spec_adj = line.split('\t')
+    species = spec_adj[0][1:]
+    adj_L_R = spec_adj[1].strip().split(',')
+    adj_L = adj_L_R[0][1:].replace("'", "")
+    adj_R = adj_L_R[1][:-1].replace("'", "").strip()
+    adj = (int(adj_L), int(adj_R))
+    if adj in potentialExtantAdjacencies:
+        potentialExtantAdjacencies[adj].add(species)
+    else:
+        speciesSet = set()
+        speciesSet.add(species)
+        potentialExtantAdjacencies[adj] = speciesSet
+
+    # SE: question: what weight should these adjacencies be assigned?
+    # SE: CHECKPOINT
+    if species in adjacencyProbs:
+        adjacencyProbs[species][adj] = 0.5 #set weight of external adjacencies in adjacencyProbs to 1
+    else:
+        adjacencyProbs[species]={adj:0.5}
+f.close()
+
+
+
+
 # create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
 # fill adjacencyProbs with input from file weighted_internal_adjacencies
-
+# SE: weighted_internal_adjacencies will contain all adjacencies seen at any of the leaves, fragmented or not
 nodesPerAdjacency={}
 #structure  (AdjL,AdjR):set(node)
 filteredAdjacencies={}
@@ -145,15 +178,20 @@ f.close()
 dict_SCJ={}
 
 #compute CCs in global adjacency graph
+# SE: this should not be influenced by ?-adjacencies, right?
 ccs, removedAdjacencies, nodesPerAdjacency = globalAdjacencyGraph.createGraph(nodesPerAdjacency,args.skip)
-#removedWeights = globalAdjacencyGraph.getWeightsForRemoved(removedAdjacencies,adjacencyProbs)
+
+
 if not args.skip_first:
+    #identify conflicts in GAG for complexity analysis
     conflicts = globalAdjacencyGraph.analyseConnectedComponents(ccs)
     globalAdjacencyGraph.outputConflicts(conflicts,args.output+"/conflicts")
 
+    #compute joint labels and check if they are valid (adjacencies conserved) at all internal nodes
     jointLabels, first = SR2.enumJointLabelings(ccs)
     validLabels, validAtNode = SR2.validLabels(jointLabels,first)
 
+    #run Sankoff-Russeau on all components
     reconstructedAdj = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha, ancientLeaves)
 
     SR2.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
@@ -161,12 +199,14 @@ if not args.skip_first:
         print node
         print "Number of reconstructed adjacencies: "+str(len(reconstructedAdj[node]))
 
+    #scaffold adjacencies
     scaffolds = scaffolding.scaffoldAdjacencies(reconstructedAdj)
     undoubled = scaffolding.undoubleScaffolds(scaffolds)
     scaffolding.outputUndoubledScaffolds(undoubled,args.output+"/undoubled_scaffolds")
     scaffolding.outputScaffolds(scaffolds,args.output+"/doubled_scaffolds")
     scaffolding.sanityCheckScaffolding(undoubled)
 
+    #compute some stats
     # reconstruct marker pairs out of extantAdjacencies
     reconstructedMarker = set()
     for adj in extantAdjacencies:

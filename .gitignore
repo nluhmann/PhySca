@@ -6,3 +6,19 @@
 *.pyc
 
 DeClone
+
+toy_example/ancestral_adjacencies2.txt
+
+toy_example/extant_adjacencies2.txt
+
+toy_example/outdir/conflicts
+
+toy_example/outdir/doubled_scaffolds
+
+toy_example/outdir/reconstructed_adjacencies
+
+toy_example/outdir/SCJ_distances
+
+toy_example/outdir/statistic_allSampled_ReconstructedAdjacencies
+
+toy_example/outdir/undoubled_scaffolds
