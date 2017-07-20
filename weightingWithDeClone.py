@@ -503,7 +503,7 @@ if args.Newick:
         elif args.families:
             extantAdjacencies = getAllAdjacenciesFromFamilyFile(args.families)
             ###!!! sim method, should be commented if you are using this script!!!
-            extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,100)
+            #extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,100)
         else:
             parser.error('Error: wrong parameter number or usage.')
         identify_potential_extant_adjacencies(extantAdjacencies)

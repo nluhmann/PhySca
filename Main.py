@@ -7,6 +7,7 @@ import argparse
 import time
 import multiprocessing
 import sys
+import os
 
 from calculate_SCJ import calculate_SCJ
 import runSample
@@ -31,6 +32,10 @@ parser.add_argument("-sc", "--start_counting", type=int, help="specifies the sta
 args = parser.parse_args()
 
 t0 = time.time()
+
+#create output directory if not existing
+if not os.path.isdir(args.output):
+    os.makedirs(args.output)
 
 if not args.internal or not args.extant or not args.tree :
     #parser.error('Error: wrong parameter number or usage.')
