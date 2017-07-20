@@ -1,5 +1,6 @@
 import sys,os,subprocess,tempfile
 import argparse
+import random
 #from ete2 import Tree
 
   
@@ -129,7 +130,7 @@ def construct_species_name(line,nameStartPos,nameEndPos,numberUnamedNodes):
 
 #retrieve extant adjacencies
 def readAdjacencyFile(file):
-    print "collect extant adjacencies from provided adjacency file"
+    print "Collect extant adjacencies from provided adjacency file"
     # keys: (left marker, right marker), value: [(species,chromosome),...]
     adjacencies = {}
     f = open(file,"r")
@@ -146,6 +147,69 @@ def readAdjacencyFile(file):
         adjacencies[(left,right)] = specieslist
     return adjacencies
 
+def getAllAdjacenciesFromFamilyFile(file):
+    print "Collect extant adjacencies from provided families file"
+    # keys: (left marker, right marker), value: [(species,chromosome),...]
+    adjacencies = {}
+    species_hash = {}
+    f = open(file, "r")
+    for line in f:
+        if line.startswith(">"):
+            fam_id = line.rstrip("\n")[1:]
+        elif not line == "" and not line == "\n":
+            species = line.split(":")[0].split(".")[0]
+            x = line.rstrip("\n").split(" ")
+            ori = x[1]
+            coords = x[0].split(":")[1]
+            s = coords.split("-")
+            start = s[0]
+            stop = s[1]
+            tup = (fam_id, ori, start, stop)
+            if species in species_hash:
+                species_hash[species].append(tup)
+            else:
+                species_hash[species] = []
+                species_hash[species].append(tup)
+    f.close()
+
+    #sort all families for all species according to start position in genome
+    for spec in species_hash:
+        sorted_by_start = sorted(species_hash[spec], key=lambda tup: tup[2])
+        #then adjacencies are contiguous entries in the sorted hash, but be careful with the orientation!
+        for i in range(0, len(sorted_by_start)):
+            #assume circular chromosomes
+            #TODO: this should be a parameter here
+            if i == len(sorted_by_start) -1:
+                first = sorted_by_start[-1]
+                second = sorted_by_start[0]
+            else:
+                first = sorted_by_start[i]
+                second = sorted_by_start[i + 1]
+            doubleFirst = doubleMarker(first[0])
+            doubleSecond = doubleMarker(second[0])
+            if first[1] == "+":
+                left = doubleFirst[1]
+            else:
+                left = doubleFirst[0]
+            if second[1] == "+":
+                right = doubleSecond[0]
+            else:
+                right = doubleSecond[1]
+            adj = (str(left),str(right))
+            rev = (str(right),str(left))
+
+            if adj in adjacencies:
+                adjacencies[adj].append((spec,"mockchrom"))
+            elif rev in adjacencies:
+                adjacencies[rev].append((spec, "mockchrom"))
+            else:
+                adjacencies[adj] = []
+                adjacencies[adj].append((spec, "mockchrom"))
+
+
+    return adjacencies
+
+
 # double marker id to account for orientation
 def doubleMarker(marker):
     if "-" in marker:
@@ -155,7 +219,7 @@ def doubleMarker(marker):
 
 # double marker and find adjacencies in chromosomes
 def findAdjacencies(speciesHash):
-    print "collect extant adjacencies from marker file..."
+    print "Collect extant adjacencies from marker file..."
     # keys: (left marker, right marker), value: [(species,chromosome),...]
     adjacencies = {}
     for species in speciesHash:
@@ -331,34 +395,54 @@ def identify_potential_extant_adjacencies(extantAdjacencies):
     for elem in extantAdjacencies.keys():
         all_present[elem] = 1
         species_present = list(set(species_present).union(extantAdjacencies[elem]))
-
     # check for each adjacency, if it can be a potential adjacency for all species not present
     # for this, check all other adjacencies that include one of the extremities and check if they are present in the species
     for adj in extantAdjacencies.keys():
-        species_missing = [x for x in species_present if x not in extantAdjacencies[elem]]
-        for spec in species_missing:
-            first_extrem = adj[0]
-            second_extrem = adj[1]
-            for elem in extantAdjacencies.keys():
-                if not elem == adj:
-                    if first_extrem in elem or second_extrem in elem:
-                        if spec in extantAdjacencies[elem]:
-                            break
-                        else:
-                            if adj in potential_adjacencies.keys():
-                                potential_adjacencies[adj].append(spec)
-                            else:
-                                potential_adjacencies[adj] = []
-                                potential_adjacencies[adj].append(spec)
-
+        if len(extantAdjacencies[adj]) > 1:
+            species_missing = [x for x in species_present if x not in extantAdjacencies[adj]]
+            for spec in species_missing:
+                first_extrem = adj[0]
+                second_extrem = adj[1]
+                good = True
+                for el in extantAdjacencies.keys():
+                    if not el == adj:
+                        if first_extrem in el or second_extrem in el:
+                            x = extantAdjacencies[el]
+                            for a in x:
+                                if spec[0] in a:
+                                    good = False
+                                    break
+                if good:
+                    if adj in potential_adjacencies.keys():
+                        potential_adjacencies[adj].add(spec)
+                    else:
+                        potential_adjacencies[adj] = set()
+                        potential_adjacencies[adj].add(spec)
     # write output
     file = open(listOfPotentialExtant, 'w')
     for adj in potential_adjacencies:
         for spec in potential_adjacencies[adj]:
-            file.write('>' + str(spec) + '\t' + str(adj) + '\n')
+            file.write('>' + str(spec[0]) + '\t' + str(adj) + '\n')
     file.close()
 
     return potential_adjacencies
+
+
+#TESTMETHOD
+def simFragmentedExtantGenomes(extantAdjacencies,numFrags):
+    #choose a couple of adjacencies and remove a random element in their species list
+    for i in range (1,numFrags):
+        k = random.choice(extantAdjacencies.keys())
+        x = extantAdjacencies[k]
+        if len(x) > 1:
+            print k
+            print x
+            x.pop(random.randrange(len(x)))
+            print x
+            print "----"
+
+    return extantAdjacencies
+
 
 
 #parsing the input parameters
@@ -371,6 +455,7 @@ parser.add_argument("-sm","--set_minimum", type=float, help="minimal value for a
 groupAM = parser.add_mutually_exclusive_group(required=True)
 groupAM.add_argument("-a","--adjacencies",type=str, help="path to adjacency-file")
 groupAM.add_argument("-m","--markers",type=str,help="path to marker-file")
+groupAM.add_argument("-f","--families",type=str,help="path to family file")
 parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
 parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
 parser.add_argument("-out","--output",type=str, help="output directory, current directory as default", default=".")
@@ -391,14 +476,15 @@ if args.nhx_Tree:
     listOfInternalNodes=get_internal_nodes_from_treefile(':',args.nhx_Tree)
     if args.adjacencies:
         extantAdjacencies=readAdjacencyFile(args.adjacencies)
-        identify_potential_extant_adjacencies(extantAdjacencies)
-        deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
     elif args.markers:
         extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
-        identify_potential_extant_adjacencies(extantAdjacencies)
-        deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, args.nhx_Tree)
+    elif args.families:
+        extantAdjacencies=getAllAdjacenciesFromFamilyFile(args.families)
     else:
         parser.error('Error: wrong parameter number or usage.')
+    identify_potential_extant_adjacencies(extantAdjacencies)
+    deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes, args.nhx_Tree)
+
 if args.Newick:
 
     if args.ignore_weights:
@@ -412,18 +498,20 @@ if args.Newick:
     else:
         if args.adjacencies:
             extantAdjacencies=readAdjacencyFile(args.adjacencies)
-            identify_potential_extant_adjacencies(extantAdjacencies)
-            deCloneProbabilities(extantAdjacencies, args.kT,listOfInternalNodes, nhxFileOut)
         elif args.markers:
             extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
-            identify_potential_extant_adjacencies(extantAdjacencies)
-            deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes,nhxFileOut)
+        elif args.families:
+            extantAdjacencies = getAllAdjacenciesFromFamilyFile(args.families)
+            ###!!! sim method, should be commented if you are using this script!!!
+            extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,100)
         else:
             parser.error('Error: wrong parameter number or usage.')
+        identify_potential_extant_adjacencies(extantAdjacencies)
+        deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes, nhxFileOut)
 
-if not args.adjacencies and not args.markers:
-    parser.error('Error: wrong parameter number or usage.')
-if not args.nhx_Tree and not args.Newick:
-    parser.error('Error: wrong parameter number or usage.')
+#if not args.adjacencies and not args.markers:
+#    parser.error('Error: wrong parameter number or usage.')
+#if not args.nhx_Tree and not args.Newick:
+#    parser.error('Error: wrong parameter number or usage.')
 
 

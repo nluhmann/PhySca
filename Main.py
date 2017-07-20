@@ -94,31 +94,32 @@ while line:
     line=f.readline()
 f.close()
 
+if args.pot_extant:
+    # SE: read all potential adjacencies into a separate hash
+    f=open(args.pot_extant,'r')
+    for line in f:
+        spec_adj = line.split('\t')
+        species = spec_adj[0][1:]
+        adj_L_R = spec_adj[1].strip().split(',')
+        adj_L = adj_L_R[0][1:].replace("'", "")
+        adj_R = adj_L_R[1][:-1].replace("'", "").strip()
+        adj = (int(adj_L), int(adj_R))
+        if adj in potentialExtantAdjacencies:
+            potentialExtantAdjacencies[adj].add(species)
+        else:
+            speciesSet = set()
+            speciesSet.add(species)
+            potentialExtantAdjacencies[adj] = speciesSet
 
-# SE: read all potential adjacencies into a separate hash
-f=open(args.pot_extant,'r')
-for line in f:
-    spec_adj = line.split('\t')
-    species = spec_adj[0][1:]
-    adj_L_R = spec_adj[1].strip().split(',')
-    adj_L = adj_L_R[0][1:].replace("'", "")
-    adj_R = adj_L_R[1][:-1].replace("'", "").strip()
-    adj = (int(adj_L), int(adj_R))
-    if adj in potentialExtantAdjacencies:
-        potentialExtantAdjacencies[adj].add(species)
-    else:
-        speciesSet = set()
-        speciesSet.add(species)
-        potentialExtantAdjacencies[adj] = speciesSet
+        # SE: question: what weight should these adjacencies be assigned?
+        # SE: CHECKPOINT
+        if species in adjacencyProbs:
+            adjacencyProbs[species][adj] = 0.5 #set weight of external adjacencies in adjacencyProbs to 1
+        else:
+            adjacencyProbs[species]={adj:0.5}
+    f.close()
 
-    # SE: question: what weight should these adjacencies be assigned?
-    # SE: CHECKPOINT
-    if species in adjacencyProbs:
-        adjacencyProbs[species][adj] = 0.5 #set weight of external adjacencies in adjacencyProbs to 1
-    else:
-        adjacencyProbs[species]={adj:0.5}
-f.close()
-
+#TODO: consider potential adjacencies when building labels for leaf nodes
 
 
 
