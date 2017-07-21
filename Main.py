@@ -8,9 +8,12 @@ import time
 import multiprocessing
 import sys
 import os
-
 from calculate_SCJ import calculate_SCJ
 import runSample
+
+##########################
+### PARSING PARAMETERS ###
+##########################
 
 #global variables
 scj_path='./SCJ_distances'
@@ -42,13 +45,17 @@ if not args.internal or not args.extant or not args.tree :
     parser.print_help()
     sys.exit(1)
 
-# read tree file
-file = open(args.tree, "r")
-newick = file.read()
-file.close()
-tree = Tree(newick, format=1)
-print tree.get_ascii()
-print " "
+
+
+
+
+
+
+
+
+############################################
+### GLOBAL PARAMETERS AND DATASTRUCTURES ###
+############################################
 
 threshold=float(args.x)
 
@@ -63,6 +70,37 @@ potentialExtantAdjacencies={}
 
 extantAdjacencies_species_adj={}
 #structure {node:set([(AdjL,AdjR),..]),..}
+
+nodesPerAdjacency={}
+#structure  (AdjL,AdjR):set(node)
+
+#dictionary for all scj distances
+dict_SCJ={}
+
+#dictionary for statistics of reconstructed Adjacencies
+#structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
+allSampleReconstructionStatistic={}
+
+
+
+
+
+
+
+
+
+###########################
+### PARSING INPUT FILES ###
+###########################
+
+# read tree file
+file = open(args.tree, "r")
+newick = file.read()
+file.close()
+tree = Tree(newick, format=1)
+print tree.get_ascii()
+print " "
+
 
 #fill dictionaries with input from weighted_extant_adjacencies
 # SE: so far, here we only store all observed extant adjacencies
@@ -124,16 +162,19 @@ if args.pot_extant:
             adjacencyProbs[species]={adj:0.5}
     f.close()
 
-#TODO: consider potential adjacencies when building labels for leaf nodes
-
+#TODO: push presence of potential adjacencies in parent down to leaf for potentially present adjacencies,
+#TODO: assumption: all adjacencies present in the parent will be consistent, so pushing them down to the leaf will not create conflicts
+#TODO: report scaffolding of extant genomes afterwards (trivial if nothing is fragmented)
+#TODO: report statistics how many extant adjacencies have been added, how many scaffolds we have
+#TODO: compare how many conflicts adding potential adjacencies adds?
+#TODO: 
 
 
 # create hash nodesPerAdjacencies from input file weighted_internal_adjacencies
 # fill adjacencyProbs with input from file weighted_internal_adjacencies
 # SE: weighted_internal_adjacencies will contain all adjacencies seen at any of the leaves, fragmented or not
-nodesPerAdjacency={}
-#structure  (AdjL,AdjR):set(node)
-filteredAdjacencies={}
+
+#filteredAdjacencies={}
 ancientLeaves = set()
 f=open(args.internal,'r')
 line=f.readline()
@@ -163,13 +204,13 @@ while line:
             spec=set()
             spec.add(species)
             nodesPerAdjacency.update({adj:spec})
-    else:
-        tup = (weight,adj)
-        if species in filteredAdjacencies:
-            filteredAdjacencies[species].append(tup)
-        else:
-            filteredAdjacencies[species]=[]
-            filteredAdjacencies[species].append(tup)
+    # else:
+    #     tup = (weight,adj)
+    #     if species in filteredAdjacencies:
+    #         filteredAdjacencies[species].append(tup)
+    #     else:
+    #         filteredAdjacencies[species]=[]
+    #         filteredAdjacencies[species].append(tup)
     #filling adjacencyProbs with internal nodes
     if species in adjacencyProbs:
             adjacencyProbs[species][adj] = weight
@@ -180,8 +221,19 @@ while line:
 f.close()
 
 
-#dictionary for all scj distances
-dict_SCJ={}
+
+
+
+
+
+
+
+
+
+
+###############################
+### COMPUTE RECONSTRUCTIONS ###
+###############################
 
 #compute CCs in global adjacency graph
 # SE: this should not be influenced by ?-adjacencies, right?
@@ -198,7 +250,7 @@ if not args.skip_first:
     validLabels, validAtNode = SR2.validLabels(jointLabels,first)
 
     #run Sankoff-Russeau on all components
-    reconstructedAdj = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha, ancientLeaves)
+    reconstructedAdj = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha, ancientLeaves, potentialExtantAdjacencies)
 
     SR2.outputReconstructedAdjacencies(reconstructedAdj,args.output+"/reconstructed_adjacencies")
     for node in reconstructedAdj:
@@ -253,11 +305,17 @@ if not args.skip_first:
 print time.time() - t0, "seconds process time"
 t_sampling=time.time()
 
-#dictionary for statistics of reconstructed Adjacencies
-#structure: >internal node  adjacency   number of how often this adj was reconstructed at this node among all samples
-allSampleReconstructionStatistic={}
 
-#Sampling
+
+
+
+
+
+
+#########################################
+### SAMPLE CO-OPTIMAL RECONSTRUCTIONS ###
+#########################################
+
 #only if a number of samples is given and if the sript is called as standalone (not imported) script
 if args.sampling and  __name__ == '__main__':
     print "SAMPLING"
@@ -284,7 +342,7 @@ if args.sampling and  __name__ == '__main__':
     pool = multiprocessing.Pool(processes=samplesize)
     #create args.sampling tasks
     tasks = ((ccs, tree, extantAdjacencies, adjacencyProbs, args.alpha, i,
-              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount,ancientLeaves) for i in range(args.start_counting, args.sampling+args.start_counting))
+              extantAdjacencies_species_adj, args.output,reconstructedMarkerCount,ancientLeaves, potentialExtantAdjacencies) for i in range(args.start_counting, args.sampling+args.start_counting))
     #execute the sampling tasks
     results = pool.map_async(runSample.runSample, tasks)
     #close pool so no more tasks can be handed over to the workers
@@ -308,6 +366,16 @@ if args.sampling and  __name__ == '__main__':
             dict_SCJ[key] = tempSCJ[key]
         print tempOutLog
 
+
+
+
+
+
+
+
+###################################
+### OUTPUT RECONSTRUCTION STATS ###
+###################################
 
 #write all SCJ distances to output file
 f=open(args.output+"/"+scj_path,'w')

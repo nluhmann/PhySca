@@ -19,6 +19,7 @@ def runSample(params):
         outputDirectory=params[7]
         reconstructedMarkerCount=params[8]
         ancientLeaves=params[9]
+        potentialExtant=params[10]
         allSampleReconstructionStatistic={}
         dict_SCJ={}
 
@@ -34,7 +35,7 @@ def runSample(params):
 
         outLog+= "Compute ancestral labels with SR...\n"
 
-        reconstructedAdj = SR2.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha, ancientLeaves)
+        reconstructedAdj = SR2.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha, ancientLeaves, potentialExtant)
         SR2.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"/reconstructed_adjacencies_" + str(i))
 
         for node in reconstructedAdj:

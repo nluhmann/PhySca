@@ -46,7 +46,6 @@ def sortEdge(edge):
         new = (second,first)
     return new
 
-
 def constructLabel(allnodes,edges):
 
     #edge is a tuple of two nodes, label these nodes with the edge
@@ -130,7 +129,6 @@ def useAllLabels(joint,first,tree):
                     validAtNode[cc][node.name] = s
     return validAtNode
 
-
 def cost(parentLabel, childLabel, edges, probs, node, alpha):
 
     #label is a list of tuple
@@ -188,9 +186,8 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
 
     return cost
 
-
 # SE: here, one leaf is annotated with one label, according to presence or absence of adjacency in the extant adjacencies
-def annotateleaves(leaf,cc,extant):
+def annotateleaves(leaf,cc,extant, potentialExtant):
 
     nodes = cc.nodes()
     edges = cc.edges()
@@ -207,12 +204,20 @@ def annotateleaves(leaf,cc,extant):
                         if elem in edges:
                             label.append((node, elem))
                             added = True
+        for elem in potentialExtant:
+            if node in elem:
+                for spec in potentialExtant[elem]:
+                    if leaf.name in spec:
+                        if not elem in edges:
+                            elem = (elem[1],elem[0])
+                        if elem in edges:
+                            label.append((node, elem))
+                            added = True
+
         if not added:
             label.append((node, "-"))
 
     return label
-
-
 
 def sankoff_bottomup(t,space, edges, probs, alpha):
 
@@ -264,7 +269,6 @@ def sankoff_bottomup(t,space, edges, probs, alpha):
             node.add_feature("minimumLabel",minLabel)
     return t
 
-
 def sankoff_topdown(t,edges, probs, alpha):
     for node in t.traverse(strategy="preorder"):
         if node.is_root():
@@ -283,7 +287,7 @@ def sankoff_topdown(t,edges, probs, alpha):
             node.add_feature("assignment",minAllLabel)
     return t
 
-def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves):
+def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant):
     print "Compute ancestral labels with SR..."
 
     adjacencies = {}
@@ -300,7 +304,7 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
                 #if the leaves is extant, the hash will contain only one entry
                 #otherwise it will contain all potential labels at an ancient leaf
                 if not node.name in ancientLeaves:
-                    lab = annotateleaves(node,cc,extant)
+                    lab = annotateleaves(node,cc,extant,potentialExtant)
                     node.add_feature("annotation",{tuple(lab):0})
 
                     #if the leaf is extant, we can already set the minimumLabel here
@@ -412,8 +416,6 @@ def computeLabelWeight(label,edges,alpha, probs,node):
 
     return cost
 
-
-
 def reconstructedAdjacencies(resolvedCCs):
     adjacencies = {}
 
@@ -511,7 +513,6 @@ def sankoff_bottomup_sampling(t,space, edges, probs, alpha):
             node.add_feature("numberOfOptimals",optimalsHash)
     return t
 
-
 def sankoff_topdown_sampling(t, edges, probs, alpha):
     for node in t.traverse(strategy="preorder"):
         if node.is_root():
@@ -563,7 +564,7 @@ def sankoff_topdown_sampling(t, edges, probs, alpha):
             node.add_feature("assignment",final)
     return t
 
-def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves):
+def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant):
     print "Compute ancestral labels with SR..."
 
     adjacencies = {}
@@ -574,7 +575,7 @@ def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancien
             #annotate leafs by their only possible label (maximum number of adjacencies)
             if node.is_leaf():
                 if not node.name in ancientLeaves:
-                    lab = annotateleaves(node,cc,extant)
+                    lab = annotateleaves(node,cc,extant, potentialExtant)
                     node.add_feature("annotation",{tuple(lab):0})
                     node.add_feature("minimumLabel",[lab])
                     node.add_feature("numberOfOptimals",{tuple(lab):1})

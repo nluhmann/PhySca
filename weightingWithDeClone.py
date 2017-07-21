@@ -1,8 +1,50 @@
 import sys,os,subprocess,tempfile
 import argparse
 import random
-#from ete2 import Tree
 
+##########################
+### PARSING PARAMETERS ###
+##########################
+
+parser = argparse.ArgumentParser(description='Weights given tree in nhx-format with DeClone. Also converts tree in NEWICK-format into tree in nhx-format')
+groupFormat = parser.add_mutually_exclusive_group(required=True)
+groupFormat.add_argument("-nhx", "--nhx_Tree", type=str, help="path to the file with nhx-tree")
+groupFormat.add_argument("-nf",'--Newick', type=str,help='path to the file with NEWICK-tree')
+parser.add_argument("-i","--ignore_weights",action='store_const', const=True, help="boolean, for either ignore or consider edge length/weights, when parsing Newick Tree into nhx Tree")
+parser.add_argument("-sm","--set_minimum", type=float, help="minimal value for any edge length, when parsing Newick Tree into nhx Tree", default=0.0)
+groupAM = parser.add_mutually_exclusive_group(required=True)
+groupAM.add_argument("-a","--adjacencies",type=str, help="path to adjacency-file")
+groupAM.add_argument("-m","--markers",type=str,help="path to marker-file")
+groupAM.add_argument("-f","--families",type=str,help="path to family file")
+parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
+parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
+parser.add_argument("-out","--output",type=str, help="output directory, current directory as default", default=".")
+
+args = parser.parse_args()
+
+#if not args.adjacencies and not args.markers:
+#    parser.error('Error: wrong parameter number or usage.')
+#if not args.nhx_Tree and not args.Newick:
+#    parser.error('Error: wrong parameter number or usage.')
+
+
+#global variables
+nhxFileOut = args.output+'/nhx_tree'
+listOfExtWeightOut =  args.output+'/extant_adjacencies'
+listOfIntWeightOut =  args.output+'/weighted_internal_adjacencies'
+singleLeafAdjOut =  args.output+'/single_leaf_adjacencies'
+listOfPotentialExtant = args.output+'/potential_extant_adjacencies'
+
+
+
+
+
+
+
+
+#################################################
+### TREE MANIPULATION AND WEIGHTING FUNCTIONS ###
+#################################################
   
 #convert NEWICK tree notation with weights into nhx notation
 #parameter: file - the path to the file with the tree in NEWICK-notation
@@ -209,7 +251,6 @@ def getAllAdjacenciesFromFamilyFile(file):
 
     return adjacencies
 
-
 # double marker id to account for orientation
 def doubleMarker(marker):
     if "-" in marker:
@@ -242,11 +283,9 @@ def findAdjacencies(speciesHash):
                     adjacencies[adj] = [(species,chrom)]
     return adjacencies
 
-
 #for each extant adjacency, use declone to compute probability that the
 #adjacency is present in an adjacency forest sampled randomly from a
 #Boltzmann distribution. Then assign adjacency if it is above threshold to internal node of the tree.
-
 def deCloneProbabilities(extantAdjacencies, kT, listOfInternalNodes, treefile):
     print "Compute probabilities with DeClone..."
     locateDeClone = os.path.dirname(sys.argv[0]) 
@@ -382,7 +421,6 @@ def read_Marker_file(marker):
     file.close()
     return species_marker_order
 
-
 # SE: here it is easy to find all potential adjacencies by computing the global set of adjacencies,
 # then compare for each set of extant adjacencies and check if a potential adjacency induces a conflict
 def identify_potential_extant_adjacencies(extantAdjacencies):
@@ -427,7 +465,6 @@ def identify_potential_extant_adjacencies(extantAdjacencies):
 
     return potential_adjacencies
 
-
 #TESTMETHOD
 def simFragmentedExtantGenomes(extantAdjacencies,numFrags):
     #choose a couple of adjacencies and remove a random element in their species list
@@ -445,31 +482,13 @@ def simFragmentedExtantGenomes(extantAdjacencies,numFrags):
 
 
 
-#parsing the input parameters
-parser = argparse.ArgumentParser(description='Weights given tree in nhx-format with DeClone. Also converts tree in NEWICK-format into tree in nhx-format')
-groupFormat = parser.add_mutually_exclusive_group(required=True)
-groupFormat.add_argument("-nhx", "--nhx_Tree", type=str, help="path to the file with nhx-tree")
-groupFormat.add_argument("-nf",'--Newick', type=str,help='path to the file with NEWICK-tree')
-parser.add_argument("-i","--ignore_weights",action='store_const', const=True, help="boolean, for either ignore or consider edge length/weights, when parsing Newick Tree into nhx Tree")
-parser.add_argument("-sm","--set_minimum", type=float, help="minimal value for any edge length, when parsing Newick Tree into nhx Tree", default=0.0)
-groupAM = parser.add_mutually_exclusive_group(required=True)
-groupAM.add_argument("-a","--adjacencies",type=str, help="path to adjacency-file")
-groupAM.add_argument("-m","--markers",type=str,help="path to marker-file")
-groupAM.add_argument("-f","--families",type=str,help="path to family file")
-parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
-parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
-parser.add_argument("-out","--output",type=str, help="output directory, current directory as default", default=".")
 
-args = parser.parse_args()
 
-#global variables
-#path for output file in Nhx-Format
-nhxFileOut = args.output+'/nhx_tree'
-listOfExtWeightOut =  args.output+'/extant_adjacencies'
-listOfIntWeightOut =  args.output+'/weighted_internal_adjacencies'
-singleLeafAdjOut =  args.output+'/single_leaf_adjacencies'
-listOfPotentialExtant = args.output+'/potential_extant_adjacencies'
 
+
+#################
+### COMPUTING ###
+#################
 
 if args.nhx_Tree:
     # get List of internal nodes from treefile
@@ -503,15 +522,8 @@ if args.Newick:
         elif args.families:
             extantAdjacencies = getAllAdjacenciesFromFamilyFile(args.families)
             ###!!! sim method, should be commented if you are using this script!!!
-            #extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,100)
+            extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,1000)
         else:
             parser.error('Error: wrong parameter number or usage.')
         identify_potential_extant_adjacencies(extantAdjacencies)
         deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes, nhxFileOut)
-
-#if not args.adjacencies and not args.markers:
-#    parser.error('Error: wrong parameter number or usage.')
-#if not args.nhx_Tree and not args.Newick:
-#    parser.error('Error: wrong parameter number or usage.')
-
-
