@@ -70,7 +70,6 @@ def scaffoldAdjacencies(reconstructedAdj):
         scaffoldsPerNode[node] = scaffold2
     return scaffoldsPerNode
 
-
 def mergeScaffolds(scaffold):
     #then merge scaffolds that have the same border
         merg = True
@@ -80,7 +79,7 @@ def mergeScaffolds(scaffold):
             keys = scaffold.keys()
 
             keys.sort(key=lambda tup: tup[0])
-            for i in range(0,len(keys)-1):
+            for i in xrange(0,len(keys)-1):
                 if keys[i][0] == keys[i+1][0]-1 and keys[i][0] % 2 == 1:
                     #merge scaffolds
                     firstList = scaffold.pop(keys[i])
@@ -88,14 +87,16 @@ def mergeScaffolds(scaffold):
                     #reverse first list, then chop of two last elements, then merge lists
                     rev = firstList[::-1]
                     revChopped = rev[:-2]
-                    revChopped += secondList
-                    scaffold[(revChopped[0],revChopped[-1])] = revChopped
+                    #revChopped += secondList
+                    secondList[0:0] = revChopped
+                    #scaffold[(revChopped[0],revChopped[-1])] = revChopped
+                    scaffold[(secondList[0],secondList[-1])] = secondList
                     merg = True
 
             #case 2: two scaffolds have the same right border (find by sorting keylist!)
             keys = scaffold.keys()
             keys.sort(key=lambda tup: tup[1])
-            for i in range(0,len(keys)-1):
+            for i in xrange(0,len(keys)-1):
                 if keys[i][1] == keys[i+1][1]-1 and keys[i][1] % 2 == 1:
                     #merge scaffolds
                     firstList = scaffold.pop(keys[i])
@@ -104,8 +105,10 @@ def mergeScaffolds(scaffold):
                     #reverse first list, then chop of two last elements, then merge lists
                     rev2 = firstList[::-1]
                     revChopped2 = rev2[2:]
-                    secondList += revChopped2
-                    scaffold[(secondList[0],secondList[-1])] = secondList
+                    #secondList += revChopped2
+                    revChopped2[0:0] = secondList
+                    #scaffold[(secondList[0],secondList[-1])] = secondList
+                    scaffold[(revChopped2[0], revChopped2[-1])] = revChopped2
                     merg = True
 
 
@@ -114,46 +117,54 @@ def mergeScaffolds(scaffold):
         while merged:
             merged = False
             keys = scaffold.keys()
-            for i in range(0,len(keys)-1):
+            l = len(keys)
+            for i in xrange(0,l-1):
                 changed = False
-                for j in range(i+1,len(keys)):
+                for j in xrange(i+1,l):
                     if keys[i][1] == keys[j][0]+1 and keys[i][1] % 2 == 0:
                         firstList = scaffold.pop(keys[i])
                         secondList = scaffold.pop(keys[j])
                         secondChop = secondList[2:]
-                        firstList += secondChop
-                        scaffold[(firstList[0],firstList[-1])] = firstList
+                        #firstList += secondChop
+                        secondChop[0:0] = firstList
+                        #scaffold[(firstList[0],firstList[-1])] = firstList
+                        scaffold[(secondChop[0], secondChop[-1])] = secondChop
                         changed = True
                         break
                     elif keys[i][0] == keys[j][1]-1 and keys[i][0] % 2 == 1:
                         firstList = scaffold.pop(keys[i])
                         secondList = scaffold.pop(keys[j])
                         firstChop = firstList[2:]
-                        secondList += firstChop
-                        scaffold[(secondList[0],secondList[-1])] = secondList
+                        #secondList += firstChop
+                        firstChop[0:0] = secondList
+                        #scaffold[(secondList[0],secondList[-1])] = secondList
+                        scaffold[(firstChop[0],firstChop[-1])] = firstChop
                         changed = True
                         break
                     elif keys[i][1] == keys[j][0]-1 and keys[i][1] % 2 == 1:
                         firstList = scaffold.pop(keys[i])
                         secondList = scaffold.pop(keys[j])
                         secondChop = secondList[2:]
-                        firstList += secondChop
-                        scaffold[(firstList[0],firstList[-1])] = firstList
+                        #firstList += secondChop
+                        secondChop[0:0] = firstList
+                        #scaffold[(firstList[0],firstList[-1])] = firstList
+                        scaffold[(secondChop[0], secondChop[-1])] = secondChop
                         changed = True
                         break
                     elif keys[i][0] == keys[j][1]+1 and keys[i][0] % 2 == 0:
                         firstList = scaffold.pop(keys[i])
                         secondList = scaffold.pop(keys[j])
                         firstChop = firstList[2:]
-                        secondList += firstChop
-                        scaffold[(secondList[0],secondList[-1])] = secondList
+                        #secondList += firstChop
+                        firstChop[0:0] = secondList
+                        #scaffold[(secondList[0],secondList[-1])] = secondList
+                        scaffold[(firstChop[0], firstChop[-1])] = firstChop
                         changed = True
                         break
                 if changed:
                     merged = True
                     break
         return scaffold
-
 
 def getOtherExtremity(extremity):
     if int(extremity) % 2 == 0:
@@ -163,7 +174,6 @@ def getOtherExtremity(extremity):
     else:
         print "Houston there is a problem!"
     return other
-
 
 def undoubleScaffolds(scaffoldsPerNode):
     undoubled = {}
@@ -211,7 +221,6 @@ def outputScaffolds(scaffolds,output):
             file.write(" ".join(str(x) for x in scaffolds[node][scaff])+" $\n")
             counter += 1
     file.close()
-
 
 def sanityCheckScaffolding(undoubledScaffolds):
     log=""

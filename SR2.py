@@ -5,7 +5,6 @@ import random
 
 def enumJointLabelings(ccs):
     print 'Enumerate joint labelings...'
-
     joint = {}
     fi = {}
     for cc in ccs:
@@ -71,12 +70,8 @@ def validLabels(joint,first):
     print "Check valid labels..."
     #check for which internal nodes of the tree, a label is valid (all edges in the label are marked with the internal node)
     #remove all labels that are not valid at any internal node of the tree
-
-    valid = {}
     validAtNode = {}
     for cc in joint:
-
-        valid[cc] = [first[cc]]
         validAtNode[cc] = {}
         validAtNode[cc]["all"] = tuple(first[cc])
         attr = nx.get_edge_attributes(cc,"species")
@@ -89,14 +84,12 @@ def validLabels(joint,first):
                     edge = elem[1]
                     spec = attr[edge]
                     if not species:
-                        for n in spec:
-                            species.add(n)
+                        species = spec
                     else:
                         species = species.intersection(spec)
                         if not species:
                             break
             if species:
-                valid[cc].append((label,species))
                 for sp in species:
                     try:
                         name = sp.name
@@ -109,8 +102,7 @@ def validLabels(joint,first):
                         s = set()
                         s.add(label)
                         validAtNode[cc][name] = s
-
-    return valid, validAtNode
+    return validAtNode
 
 def useAllLabels(joint,first,tree):
     validAtNode = {}
@@ -187,35 +179,71 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
     return cost
 
 # SE: here, one leaf is annotated with one label, according to presence or absence of adjacency in the extant adjacencies
-def annotateleaves(leaf,cc,extant, potentialExtant):
+def annotateleaves(leaf,cc,extant, potentialExtant, potentialLookUp):
 
     nodes = cc.nodes()
     edges = cc.edges()
     label = []
 
-    for node in nodes:
-        added = False
-        for elem in extant:
-            if node in elem:
-                for spec in extant[elem]:
-                    if leaf.name in spec:
-                        if not elem in edges:
-                            elem = (elem[1],elem[0])
-                        if elem in edges:
-                            label.append((node, elem))
-                            added = True
-        for elem in potentialExtant:
-            if node in elem:
-                for spec in potentialExtant[elem]:
-                    if leaf.name in spec:
-                        if not elem in edges:
-                            elem = (elem[1],elem[0])
-                        if elem in edges:
-                            label.append((node, elem))
-                            added = True
 
-        if not added:
+    for edge in edges:
+        if edge in extant:
+            species = extant[edge]
+            if leaf.name in species:
+                label.append((edge[0], edge))
+                label.append((edge[1], edge))
+            elif edge in potentialExtant:
+                species = potentialExtant[edge]
+                if leaf.name in species:
+                    label.append((edge[0], edge))
+                    label.append((edge[1], edge))
+        elif (edge[1],edge[0]) in extant:
+            rev = (edge[1],edge[0])
+            species = extant[rev]
+            if leaf.name in species:
+                label.append((edge[0], edge))
+                label.append((edge[1], edge))
+            elif rev in potentialExtant:
+                species = potentialExtant[rev]
+                if leaf.name in species:
+                    label.append((edge[0], edge))
+                    label.append((edge[1], edge))
+        else:
+            print "Edge should not exist!"
+    for node in nodes:
+        existing = False
+        for l in label:
+            if node in l:
+                existing = True
+                break
+        if not existing:
             label.append((node, "-"))
+
+    # label = []
+    # for node in nodes:
+    #     added = False
+    #     for elem in extant:
+    #         if node in elem:
+    #             for spec in extant[elem]:
+    #                 if leaf.name in spec:
+    #                     if not elem in edges:
+    #                         elem = (elem[1],elem[0])
+    #                     if elem in edges:
+    #                         label.append((node, elem))
+    #                         added = True
+    #     for elem in potentialExtant:
+    #         if node in elem:
+    #             for spec in potentialExtant[elem]:
+    #                 if leaf.name in spec:
+    #                     if not elem in edges:
+    #                         elem = (elem[1],elem[0])
+    #                     if elem in edges:
+    #                         label.append((node, elem))
+    #                         added = True
+    #
+    #     if not added:
+    #         label.append((node, "-"))
+
 
     return label
 
@@ -287,7 +315,7 @@ def sankoff_topdown(t,edges, probs, alpha):
             node.add_feature("assignment",minAllLabel)
     return t
 
-def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant):
+def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant, lookUpAdjacencies):
     print "Compute ancestral labels with SR..."
 
     adjacencies = {}
@@ -304,7 +332,7 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
                 #if the leaves is extant, the hash will contain only one entry
                 #otherwise it will contain all potential labels at an ancient leaf
                 if not node.name in ancientLeaves:
-                    lab = annotateleaves(node,cc,extant,potentialExtant)
+                    lab = annotateleaves(node,cc,extant,potentialExtant,lookUpAdjacencies)
                     node.add_feature("annotation",{tuple(lab):0})
 
                     #if the leaf is extant, we can already set the minimumLabel here
@@ -371,6 +399,7 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
         #then compute top-down labeling for tree
         annotatedTree = sankoff_topdown(annoTree, cc.edges(), probabilities, alpha)
 
+        #collect reconstructed adjacencies at each internal node
         for node in annotatedTree.traverse():
             if not node.is_leaf() or node.name in ancientLeaves:
                 label = node.assignment
@@ -388,7 +417,35 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
                     else:
                         adjacencies[node.name] = list(labelAdj)
 
-    return adjacencies
+    #push annotation for potential adjacencies to leaves, add present adjacencies to extantAdjacencies
+    counter = 0
+    for adj in potentialExtant:
+        for node in potentialExtant[adj]:
+            x = annotatedTree.get_leaves_by_name(node)
+            parent = x[0].up
+            if adj in adjacencies[parent.name]:
+                extant[adj].add(node)
+                counter += 1
+                #print "added adjacency"
+            #else:
+                #print "not added adjacency"
+    print str(counter) + " extant adjacencies added in total."
+    newExtant = collectAdjacenciesPerNode(extant)
+
+    return adjacencies, newExtant
+
+def collectAdjacenciesPerNode(adjacency_hash):
+    # adjacency_hash: keys={adj}, values=[nodes]
+    adjacenciesPerNode = {}
+    for adj in adjacency_hash:
+        for node in adjacency_hash[adj]:
+            if node in adjacenciesPerNode:
+                adjacenciesPerNode[node].append(adj)
+            else:
+                adjacenciesPerNode[node] = []
+                adjacenciesPerNode[node].append(adj)
+
+    return adjacenciesPerNode
 
 def computeLabelWeight(label,edges,alpha, probs,node):
     adj = set()

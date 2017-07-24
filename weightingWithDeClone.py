@@ -22,6 +22,12 @@ parser.add_argument("-out","--output",type=str, help="output directory, current 
 
 args = parser.parse_args()
 
+
+# create output directory if not existing
+if not os.path.isdir(args.output):
+    os.makedirs(args.output)
+
+
 #if not args.adjacencies and not args.markers:
 #    parser.error('Error: wrong parameter number or usage.')
 #if not args.nhx_Tree and not args.Newick:
@@ -204,8 +210,8 @@ def getAllAdjacenciesFromFamilyFile(file):
             ori = x[1]
             coords = x[0].split(":")[1]
             s = coords.split("-")
-            start = s[0]
-            stop = s[1]
+            start = int(s[0])
+            stop = int(s[1])
             tup = (fam_id, ori, start, stop)
             if species in species_hash:
                 species_hash[species].append(tup)
@@ -237,8 +243,13 @@ def getAllAdjacenciesFromFamilyFile(file):
                 right = doubleSecond[0]
             else:
                 right = doubleSecond[1]
-            adj = (str(left),str(right))
-            rev = (str(right),str(left))
+
+            if left < right:
+                adj = (str(left),str(right))
+                rev = (str(right), str(left))
+            else:
+                rev = (str(left), str(right))
+                adj = (str(right), str(left))
 
             if adj in adjacencies:
                 adjacencies[adj].append((spec,"mockchrom"))
@@ -472,11 +483,7 @@ def simFragmentedExtantGenomes(extantAdjacencies,numFrags):
         k = random.choice(extantAdjacencies.keys())
         x = extantAdjacencies[k]
         if len(x) > 1:
-            print k
-            print x
             x.pop(random.randrange(len(x)))
-            print x
-            print "----"
 
     return extantAdjacencies
 
@@ -521,7 +528,9 @@ if args.Newick:
             extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
         elif args.families:
             extantAdjacencies = getAllAdjacenciesFromFamilyFile(args.families)
-            ###!!! sim method, should be commented if you are using this script!!!
+
+            ###!!! sim method, should be commented when you are using this script!!!
+            #ToDo separate script for simulating extant fragmented genomes
             extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,1000)
         else:
             parser.error('Error: wrong parameter number or usage.')
