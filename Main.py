@@ -10,6 +10,7 @@ import sys
 import os
 from calculate_SCJ import calculate_SCJ
 import runSample
+import collections
 
 ##########################
 ### PARSING PARAMETERS ###
@@ -61,20 +62,17 @@ threshold = float(args.x)
 adjacencyProbs = {}
 # structure {Node:{(AdjL,AdjR):weight,..},..}
 
-extantAdjacencies = {}
+extantAdjacencies = collections.defaultdict(set)
 # structure {(AdjL,AdjR):set([node,node,..]),..}
 
-potentialExtantAdjacencies = {}
+potentialExtantAdjacencies = collections.defaultdict(set)
 # structure {(AdjL,AdjR):set([node,node,..]),..}
 
-extantAdjacencies_species_adj = {}
+extantAdjacencies_species_adj = collections.defaultdict(set)
 # structure {node:set([(AdjL,AdjR),..]),..}
 
-nodesPerAdjacency = {}
+nodesPerAdjacency = collections.defaultdict(set)
 # structure  (AdjL,AdjR):set(node)
-
-lookupAdjacencies = {}
-# structure {extremity:set([adj1,adj2,...]),...}
 
 # dictionary for all scj distances
 dict_SCJ = {}
@@ -106,38 +104,17 @@ while line:
     adj_L = int(adj_L_R[0][1:].replace("'", ""))
     adj_R = int(adj_L_R[1][:-1].replace("'", "").strip())
     adj = (adj_L, adj_R)
-    if adj_L in lookupAdjacencies:
-        lookupAdjacencies[adj_L].add(adj)
-    else:
-        lookupAdjacencies[adj_L] = set()
-        lookupAdjacencies[adj_L].add(adj)
-    if adj_R in lookupAdjacencies:
-        lookupAdjacencies[adj_R].add(adj)
-    else:
-        lookupAdjacencies[adj_R] = set()
-        lookupAdjacencies[adj_R].add(adj)
 
-    # if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
-    if adj in extantAdjacencies:
-        new_set = extantAdjacencies[adj]
-        new_set.add(species)
-        extantAdjacencies[adj] = new_set
-    else:
-        speciesSet = set()
-        speciesSet.add(species)
-        extantAdjacencies.update({adj: speciesSet})
-    if species in extantAdjacencies_species_adj:
-        new_set = extantAdjacencies_species_adj[species]
-        new_set.add(adj)
-        extantAdjacencies_species_adj[species] = new_set
-    else:
-        adj_set = set()
-        adj_set.add(adj)
-        extantAdjacencies_species_adj[species] = adj_set
+    #if weight > threshold: #filtering all adjacencies with a weight smaller than given threshold x
+    extantAdjacencies[adj].add(species)
+
+    extantAdjacencies_species_adj[species].add(adj)
+
     if species in adjacencyProbs:
         adjacencyProbs[species][adj] = 1.0  # set weight of external adjacencies in adjacencyProbs to 1
     else:
         adjacencyProbs[species] = {adj: 1.0}
+
     line = f.readline()
 f.close()
 
@@ -151,25 +128,8 @@ if args.pot_extant:
         adj_L = adj_L_R[0][1:].replace("'", "")
         adj_R = adj_L_R[1][:-1].replace("'", "").strip()
         adj = (int(adj_L), int(adj_R))
-        if adj_L in lookupAdjacencies:
-            lookupAdjacencies[adj_L].add(adj)
-        else:
-            lookupAdjacencies[adj_L] = set()
-            lookupAdjacencies[adj_L].add(adj)
-        if adj_R in lookupAdjacencies:
-            lookupAdjacencies[adj_R].add(adj)
-        else:
-            lookupAdjacencies[adj_R] = set()
-            lookupAdjacencies[adj_R].add(adj)
 
-        if adj in potentialExtantAdjacencies:
-            new_set = potentialExtantAdjacencies[adj]
-            new_set.add(species)
-            potentialExtantAdjacencies[adj] = new_set
-        else:
-            speciesSet = set()
-            speciesSet.add(species)
-            potentialExtantAdjacencies.update({adj: speciesSet})
+        potentialExtantAdjacencies[adj].add(species)
 
         # SE: question: what weight should these adjacencies be assigned?
         # SE: CHECKPOINT
@@ -211,14 +171,8 @@ while line:
 
     if weight > threshold:  # filtering all adjacencies with a precomputed weight smaller than the threshold
         # filling nodesPerAdjaceny
-        if adj in nodesPerAdjacency:
-            new_set_A = nodesPerAdjacency[adj]
-            new_set_A.add(species)
-            nodesPerAdjacency[adj] = new_set_A
-        else:
-            spec = set()
-            spec.add(species)
-            nodesPerAdjacency.update({adj: spec})
+        nodesPerAdjacency[adj].add(species)
+
     # else:
     #     tup = (weight,adj)
     #     if species in filteredAdjacencies:
@@ -259,7 +213,7 @@ if not args.skip_first:
 
     # run Sankoff-Rousseau on all components
     reconstructedAdj,newExtant = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha,
-                                            ancientLeaves, potentialExtantAdjacencies, lookupAdjacencies)
+                                            ancientLeaves, potentialExtantAdjacencies)
 
     SR2.outputReconstructedAdjacencies(reconstructedAdj, args.output + "/reconstructed_adjacencies")
     for node in reconstructedAdj:

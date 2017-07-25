@@ -1,5 +1,5 @@
 __author__ = 'nluhmann'
-
+import collections
 
 #scaffold reconstructed adjacencies at each internal node
 def scaffoldAdjacencies(reconstructedAdj):
@@ -15,7 +15,7 @@ def scaffoldAdjacencies(reconstructedAdj):
             inserted = False
 
             #check if adjacency can extend an existing scaffold, extend only one scaffold if there are two possibilities
-            for scaff in scaffold.keys():
+            for scaff in scaffold:
                 if adj[0] == scaff[0]:
                     markerList = scaffold.pop(scaff)
                     other = getOtherExtremity(adj[1])
@@ -176,9 +176,8 @@ def getOtherExtremity(extremity):
     return other
 
 def undoubleScaffolds(scaffoldsPerNode):
-    undoubled = {}
+    undoubled = collections.defaultdict(list)
     for node in scaffoldsPerNode:
-        undoubled[node] = []
         scaffolds = scaffoldsPerNode[node]
         for sc in scaffolds:
             scaffold = []

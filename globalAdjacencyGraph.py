@@ -3,6 +3,7 @@ __author__ = 'nluhmann'
 import networkx as nx
 import itertools
 import math
+import collections
 
 # extant:
 # keys: (left marker, right marker), value: [(species,chromosome),...]
@@ -64,11 +65,8 @@ def createGraph(ancestral,skip):
     #         print str(nx.number_of_edges(graphs[i]))
     return graphs, removedAdjacencies, ancestral
 
-
-
-
 def analyseConnectedComponents(graphs):
-    conflicts = {}
+    conflicts = collections.defaultdict(list)
     for cc in graphs:
         nodes = nx.nodes(cc)
         for node in nodes:
@@ -87,16 +85,13 @@ def analyseConnectedComponents(graphs):
                     if not left.isdisjoint(right):
                         conflict = left.intersection(right)
                         for elem in conflict:
-                            if elem in conflicts:
-                                conflicts[elem].append(pair)
-                            else:
-                                conflicts[elem] = [pair]
+                            conflicts[elem].append(pair)
+
     #combineConflicts(conflicts)
     print " "
     for species in conflicts:
         print "Number of conflicts in "+species+" : "+str(len(conflicts[species]))
     return conflicts
-
 
 def outputConflicts(conflicts,out):
     file = open(out,"w")

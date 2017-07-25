@@ -1,6 +1,7 @@
 __author__ = 'nluhmann'
 import networkx as nx
 import random
+import collections
 
 
 def enumJointLabelings(ccs):
@@ -179,7 +180,7 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
     return cost
 
 # SE: here, one leaf is annotated with one label, according to presence or absence of adjacency in the extant adjacencies
-def annotateleaves(leaf,cc,extant, potentialExtant, potentialLookUp):
+def annotateleaves(leaf,cc,extant, potentialExtant):
 
     nodes = cc.nodes()
     edges = cc.edges()
@@ -315,7 +316,7 @@ def sankoff_topdown(t,edges, probs, alpha):
             node.add_feature("assignment",minAllLabel)
     return t
 
-def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant, lookUpAdjacencies):
+def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancientLeaves, potentialExtant):
     print "Compute ancestral labels with SR..."
 
     adjacencies = {}
@@ -332,7 +333,7 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
                 #if the leaves is extant, the hash will contain only one entry
                 #otherwise it will contain all potential labels at an ancient leaf
                 if not node.name in ancientLeaves:
-                    lab = annotateleaves(node,cc,extant,potentialExtant,lookUpAdjacencies)
+                    lab = annotateleaves(node,cc,extant,potentialExtant)
                     node.add_feature("annotation",{tuple(lab):0})
 
                     #if the leaf is extant, we can already set the minimumLabel here
@@ -436,14 +437,10 @@ def computeLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancie
 
 def collectAdjacenciesPerNode(adjacency_hash):
     # adjacency_hash: keys={adj}, values=[nodes]
-    adjacenciesPerNode = {}
+    adjacenciesPerNode = collections.defaultdict(list)
     for adj in adjacency_hash:
         for node in adjacency_hash[adj]:
-            if node in adjacenciesPerNode:
-                adjacenciesPerNode[node].append(adj)
-            else:
-                adjacenciesPerNode[node] = []
-                adjacenciesPerNode[node].append(adj)
+            adjacenciesPerNode[node].append(adj)
 
     return adjacenciesPerNode
 
