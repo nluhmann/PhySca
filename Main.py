@@ -199,6 +199,7 @@ while line:
     species = str(spec_adj_weight[0][1:])
     # check if we have an ancient leaf
     nodes = tree.search_nodes(name=species)
+    #ToDo this gives an error if we read a newick tree with ancestor names!
     if nodes[0].is_leaf():
         ancientLeaves.add(species)
 
@@ -253,8 +254,8 @@ if not args.skip_first:
     validAtNode = SR2.validLabels(jointLabels, first)
 
     ### comparing to previous extant genomes!
-    scaffolds_old = scaffolding.scaffoldAdjacencies(SR2.collectAdjacenciesPerNode(extantAdjacencies))
-    scaffolding.outputScaffolds(scaffolds_old, args.output + "/doubled_scaffolds_extant_old")
+    #scaffolds_old = scaffolding.scaffoldAdjacencies(SR2.collectAdjacenciesPerNode(extantAdjacencies))
+    #scaffolding.outputScaffolds(scaffolds_old, args.output + "/doubled_scaffolds_extant_old")
 
     # run Sankoff-Rousseau on all components
     reconstructedAdj,newExtant = SR2.computeLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, args.alpha,

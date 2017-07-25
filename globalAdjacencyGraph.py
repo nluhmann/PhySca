@@ -25,7 +25,7 @@ def createGraph(ancestral,skip):
     print "Number of edges: "+str(G.number_of_edges())
     print "Number of nodes: "+str(G.number_of_nodes())
     print "Number of connected components: "+str(nx.number_connected_components(G))
-    length = [len(c) for c in sorted(nx.connected_components(G), key=len, reverse=True)]
+    #length = [len(c) for c in sorted(nx.connected_components(G), key=len, reverse=True)]
 
 
     #connected components as subgraphs
@@ -60,7 +60,7 @@ def createGraph(ancestral,skip):
 
     # if len(graphs) > 10:
     #     for i in range(0,10):
-    #         #print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
+    #         print str(i)+" CC, number of nodes: "+str(nx.number_of_nodes(graphs[i]))
     #         print str(nx.number_of_edges(graphs[i]))
     return graphs, removedAdjacencies, ancestral
 

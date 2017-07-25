@@ -181,6 +181,8 @@ def readAdjacencyFile(file):
     print "Collect extant adjacencies from provided adjacency file"
     # keys: (left marker, right marker), value: [(species,chromosome),...]
     adjacencies = {}
+    lookUpHash = {}
+    speciesList = set()
     f = open(file,"r")
     for line in f:
         fields = line.rstrip("\n").split("#")
@@ -190,16 +192,31 @@ def readAdjacencyFile(file):
         specieslist = []
         for extant in fields[1:]:
             species = extant.split(":")[0].split(".")[0]
+            speciesList.add(species)
             specieslist.append((species,"mockchrom"))
         specieslist = set(specieslist)
         adjacencies[(left,right)] = specieslist
-    return adjacencies
+
+        if left in lookUpHash:
+            lookUpHash[left].add(right)
+        else:
+            lookUpHash[left] = set()
+            lookUpHash[left].add(right)
+        if right in lookUpHash:
+            lookUpHash[right].add(left)
+        else:
+            lookUpHash[right] = set()
+            lookUpHash[right].add(left)
+
+    return adjacencies, lookUpHash, list(speciesList)
 
 def getAllAdjacenciesFromFamilyFile(file):
     print "Collect extant adjacencies from provided families file"
     # keys: (left marker, right marker), value: [(species,chromosome),...]
     adjacencies = {}
     species_hash = {}
+
+    lookUpHash = {}
     f = open(file, "r")
     for line in f:
         if line.startswith(">"):
@@ -220,6 +237,7 @@ def getAllAdjacenciesFromFamilyFile(file):
                 species_hash[species].append(tup)
     f.close()
 
+    speciesList = species_hash.keys()
     #sort all families for all species according to start position in genome
     for spec in species_hash:
         sorted_by_start = sorted(species_hash[spec], key=lambda tup: tup[2])
@@ -259,8 +277,20 @@ def getAllAdjacenciesFromFamilyFile(file):
                 adjacencies[adj] = []
                 adjacencies[adj].append((spec, "mockchrom"))
 
+            if left in lookUpHash:
+                lookUpHash[left].add(right)
+            else:
+                lookUpHash[left] = set()
+                lookUpHash[left].add(right)
 
-    return adjacencies
+            if right in lookUpHash:
+                lookUpHash[right].add(left)
+            else:
+                lookUpHash[right] = set()
+                lookUpHash[right].add(left)
+
+
+    return adjacencies, lookUpHash, speciesList
 
 # double marker id to account for orientation
 def doubleMarker(marker):
@@ -274,7 +304,10 @@ def findAdjacencies(speciesHash):
     print "Collect extant adjacencies from marker file..."
     # keys: (left marker, right marker), value: [(species,chromosome),...]
     adjacencies = {}
+    lookUpHash = {}
+    speciesList = []
     for species in speciesHash:
+        speciesList.append(species)
         chromosomes = speciesHash[species]
         for chrom in chromosomes:
             orderList = chromosomes[chrom]
@@ -283,16 +316,32 @@ def findAdjacencies(speciesHash):
                 second = orderList[i+1]
                 doubleFirst = doubleMarker(first)
                 doubleSecond = doubleMarker(second)
+
                 #take right extrem of first and left extrem of second for adj tuple
-                adj = (doubleFirst[1],doubleSecond[0])
-                rev = (doubleSecond[0],doubleFirst[1])
+                f = doubleFirst[1]
+                s = doubleSecond[0]
+                adj = (f,s)
+                rev = (s,f)
+
                 if adj in adjacencies:
                     adjacencies[adj].append((species,chrom))
                 elif rev in adjacencies:
                     adjacencies[rev].append((species,chrom))
                 else:
                     adjacencies[adj] = [(species,chrom)]
-    return adjacencies
+
+                if f in lookUpHash:
+                    lookUpHash[f].add(s)
+                else:
+                    lookUpHash[f] = set()
+                    lookUpHash[f].add(s)
+
+                if s in lookUpHash:
+                    lookUpHash[s].add(f)
+                else:
+                    lookUpHash[s] = set()
+                    lookUpHash[s].add(f)
+    return adjacencies, lookUpHash, speciesList
 
 #for each extant adjacency, use declone to compute probability that the
 #adjacency is present in an adjacency forest sampled randomly from a
@@ -416,7 +465,7 @@ def read_Marker_file(marker):
                 species_marker_order[species] = chromosomes
                 print species
                 print markerCount
-            species = line.split("\t")[0][1:].rstrip("\n")
+            species = line.split(" ")[0][1:].rstrip("\n")
             chromosomes = {}
             markerCount = 0
             # new chromosome
@@ -434,35 +483,60 @@ def read_Marker_file(marker):
 
 # SE: here it is easy to find all potential adjacencies by computing the global set of adjacencies,
 # then compare for each set of extant adjacencies and check if a potential adjacency induces a conflict
-def identify_potential_extant_adjacencies(extantAdjacencies):
+def identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, speciesList):
     potential_adjacencies = {}
-
+    print "Identify potential extant adjacencies"
     # extant Adjacencies: keys: (left marker, right marker), value: [(species,chromosome),...]
     # collect all different adjacencies present in any extant adjacency
-    all_present = {}
-    species_present = {}
-    for elem in extantAdjacencies.keys():
-        all_present[elem] = 1
-        species_present = list(set(species_present).union(extantAdjacencies[elem]))
+    #species_present = {}
+    #for elem in extantAdjacencies:
+    #    species_present = list(set(species_present).union(extantAdjacencies[elem]))
+    #print "Find adjacencies"
     # check for each adjacency, if it can be a potential adjacency for all species not present
     # for this, check all other adjacencies that include one of the extremities and check if they are present in the species
-    for adj in extantAdjacencies.keys():
+
+    for adj in extantAdjacencies:
         if len(extantAdjacencies[adj]) > 1:
-            species_missing = [x for x in species_present if x not in extantAdjacencies[adj]]
+            species_missing = [x for x in speciesList if x not in extantAdjacencies[adj]]
             for spec in species_missing:
                 first_extrem = adj[0]
                 second_extrem = adj[1]
                 good = True
-                for el in extantAdjacencies.keys():
-                    if not el == adj:
-                        if first_extrem in el or second_extrem in el:
-                            x = extantAdjacencies[el]
-                            for a in x:
-                                if spec[0] in a:
-                                    good = False
-                                    break
+                first_adj = lookUpHash[first_extrem]
+                for elem in first_adj:
+                    if (elem,first_extrem) in extantAdjacencies:
+                        x = extantAdjacencies[(elem,first_extrem)]
+                    else:
+                        x = extantAdjacencies[(first_extrem, elem)]
+                    for a in x:
+                        if spec in a:
+                            good = False
+                            break
+                    if not good:
+                        break
                 if good:
-                    if adj in potential_adjacencies.keys():
+                    second_adj = lookUpHash[second_extrem]
+                    for elem in second_adj:
+                        if (elem,second_extrem) in extantAdjacencies:
+                            x = extantAdjacencies[(elem,second_extrem)]
+                        else:
+                            x = extantAdjacencies[(second_extrem,elem)]
+                        for a in x:
+                            if spec in a:
+                                good = False
+                                break
+                    if not good:
+                        break
+                # for el in extantAdjacencies:
+                #     if not el == adj:
+                #         if first_extrem in el or second_extrem in el:
+                #             x = extantAdjacencies[el]
+                #             for a in x:
+                #                 if spec[0] in a:
+                #                     good = False
+                #                     break
+                if good:
+                    if adj in potential_adjacencies:
                         potential_adjacencies[adj].add(spec)
                     else:
                         potential_adjacencies[adj] = set()
@@ -471,7 +545,7 @@ def identify_potential_extant_adjacencies(extantAdjacencies):
     file = open(listOfPotentialExtant, 'w')
     for adj in potential_adjacencies:
         for spec in potential_adjacencies[adj]:
-            file.write('>' + str(spec[0]) + '\t' + str(adj) + '\n')
+            file.write('>' + str(spec) + '\t' + str(adj) + '\n')
     file.close()
 
     return potential_adjacencies
@@ -501,14 +575,14 @@ if args.nhx_Tree:
     # get List of internal nodes from treefile
     listOfInternalNodes=get_internal_nodes_from_treefile(':',args.nhx_Tree)
     if args.adjacencies:
-        extantAdjacencies=readAdjacencyFile(args.adjacencies)
+        extantAdjacencies, lookUpHash = readAdjacencyFile(args.adjacencies)
     elif args.markers:
-        extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
+        extantAdjacencies, lookUpHash, speciesList =findAdjacencies(read_Marker_file(args.markers))
     elif args.families:
         extantAdjacencies=getAllAdjacenciesFromFamilyFile(args.families)
     else:
         parser.error('Error: wrong parameter number or usage.')
-    identify_potential_extant_adjacencies(extantAdjacencies)
+    identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, speciesList)
     deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes, args.nhx_Tree)
 
 if args.Newick:
@@ -523,16 +597,17 @@ if args.Newick:
         print 'Parsed Newick-File to nhx-File.'
     else:
         if args.adjacencies:
-            extantAdjacencies=readAdjacencyFile(args.adjacencies)
+            extantAdjacencies, lookUpHash = readAdjacencyFile(args.adjacencies)
         elif args.markers:
-            extantAdjacencies=findAdjacencies(read_Marker_file(args.markers))
+            extantAdjacencies, lookUpHash, speciesList = findAdjacencies(read_Marker_file(args.markers))
         elif args.families:
             extantAdjacencies = getAllAdjacenciesFromFamilyFile(args.families)
 
             ###!!! sim method, should be commented when you are using this script!!!
             #ToDo separate script for simulating extant fragmented genomes
-            extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,1000)
+            #extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,1000)
         else:
             parser.error('Error: wrong parameter number or usage.')
-        identify_potential_extant_adjacencies(extantAdjacencies)
+        #TODO add parameter so this is not always done
+        identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, speciesList)
         deCloneProbabilities(extantAdjacencies, args.kT, listOfInternalNodes, nhxFileOut)
