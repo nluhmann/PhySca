@@ -179,7 +179,6 @@ def cost(parentLabel, childLabel, edges, probs, node, alpha):
 
     return cost
 
-# SE: here, one leaf is annotated with one label, according to presence or absence of adjacency in the extant adjacencies
 def annotateleaves(leaf,cc,extant, potentialExtant):
 
     nodes = cc.nodes()

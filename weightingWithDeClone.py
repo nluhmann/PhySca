@@ -21,6 +21,7 @@ parser.add_argument("-kT",type=float,help="deClone constant", default=0.1)
 parser.add_argument("-jP","--just_Parse",action='store_const', const=True, help="boolean, for either just parse the Newick-file or run DeClone after it.")
 parser.add_argument("-out","--output",type=str, help="output directory, current directory as default", default=".")
 
+
 args = parser.parse_args()
 
 
@@ -244,20 +245,20 @@ def getAllAdjacenciesFromFamilyFile(file):
             doubleFirst = doubleMarker(first[0])
             doubleSecond = doubleMarker(second[0])
             if first[1] == "+":
-                left = doubleFirst[1]
+                left = str(doubleFirst[1])
             else:
-                left = doubleFirst[0]
+                left = str(doubleFirst[0])
             if second[1] == "+":
-                right = doubleSecond[0]
+                right = str(doubleSecond[0])
             else:
-                right = doubleSecond[1]
+                right = str(doubleSecond[1])
 
             if left < right:
-                adj = (str(left),str(right))
-                rev = (str(right), str(left))
+                adj = (left,right)
+                rev = (right, left)
             else:
-                rev = (str(left), str(right))
-                adj = (str(right), str(left))
+                rev = (left, right)
+                adj = (right, left)
 
             if adj in adjacencies:
                 adjacencies[adj].append((spec,"mockchrom"))
@@ -445,7 +446,7 @@ def read_Marker_file(marker):
     file.close()
     return species_marker_order
 
-# SE: here it is easy to find all potential adjacencies by computing the global set of adjacencies,
+# find all potential adjacencies by computing the global set of adjacencies,
 # then compare for each set of extant adjacencies and check if a potential adjacency induces a conflict
 def identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, speciesList):
     potential_adjacencies = collections.defaultdict(set)
@@ -460,8 +461,9 @@ def identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, species
     # for this, check all other adjacencies that include one of the extremities and check if they are present in the species
 
     for adj in extantAdjacencies:
-        if len(extantAdjacencies[adj]) > 1:
-            species_missing = [x for x in speciesList if x not in extantAdjacencies[adj]]
+        #if len(extantAdjacencies[adj]) > 1:
+            unzipped = zip(*extantAdjacencies[adj])
+            species_missing = [x for x in speciesList if x not in unzipped[0]]
             for spec in species_missing:
                 first_extrem = adj[0]
                 second_extrem = adj[1]
@@ -491,14 +493,6 @@ def identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, species
                                 break
                     if not good:
                         break
-                # for el in extantAdjacencies:
-                #     if not el == adj:
-                #         if first_extrem in el or second_extrem in el:
-                #             x = extantAdjacencies[el]
-                #             for a in x:
-                #                 if spec[0] in a:
-                #                     good = False
-                #                     break
                 if good:
                     potential_adjacencies[adj].add(spec)
 
@@ -514,16 +508,14 @@ def identify_potential_extant_adjacencies(extantAdjacencies, lookUpHash, species
 #TESTMETHOD
 def simFragmentedExtantGenomes(extantAdjacencies,numFrags):
     #choose a couple of adjacencies and remove a random element in their species list
-    for i in range (1,numFrags):
+    while numFrags > 0:
         k = random.choice(extantAdjacencies.keys())
         x = extantAdjacencies[k]
         if len(x) > 1:
             x.pop(random.randrange(len(x)))
+            numFrags -= 1
 
     return extantAdjacencies
-
-
-
 
 
 
@@ -566,7 +558,7 @@ if args.Newick:
 
             ###!!! sim method, should be commented when you are using this script!!!
             #ToDo separate script for simulating extant fragmented genomes
-            #extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,1000)
+            #extantAdjacencies = simFragmentedExtantGenomes(extantAdjacencies,2000)
         else:
             parser.error('Error: wrong parameter number or usage.')
         #TODO add parameter so this is not always done
