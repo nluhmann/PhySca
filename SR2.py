@@ -706,5 +706,19 @@ def sampleLabelings(tree, ccs, validAtNode, extant, probabilities, alpha, ancien
                         adjacencies[node.name] += list(labelAdj)
                     else:
                         adjacencies[node.name] = list(labelAdj)
+                        # push annotation for potential adjacencies to leaves, add present adjacencies to extantAdjacencies
+    counter = 0
+    for adj in potentialExtant:
+        for node in potentialExtant[adj]:
+            x = annotatedTree.get_leaves_by_name(node)
+            parent = x[0].up
+            if adj in adjacencies[parent.name]:
+                extant[adj].add(node)
+                counter += 1
+                # print "added adjacency"
+                # else:
+                # print "not added adjacency"
+    print str(counter) + " extant adjacencies added in total."
+    newExtant = collectAdjacenciesPerNode(extant)
 
-    return adjacencies
+    return adjacencies, newExtant

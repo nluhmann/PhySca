@@ -2,7 +2,6 @@
 import SR2
 import scaffolding
 
-
 from calculate_SCJ import calculate_SCJ
 
 
@@ -30,12 +29,12 @@ def runSample(params):
         outLog+="Enumerate joint labelings...\n"
         jointLabels, first = SR2.enumJointLabelings(ccs)
         outLog+="Check valid labels...\n"
-        validLabels, validAtNode = SR2.validLabels(jointLabels, first)
+        validAtNode = SR2.validLabels(jointLabels, first)
 
 
         outLog+= "Compute ancestral labels with SR...\n"
 
-        reconstructedAdj = SR2.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha, ancientLeaves, potentialExtant)
+        reconstructedAdj, newExtant = SR2.sampleLabelings(tree, ccs, validAtNode, extantAdjacencies, adjacencyProbs, alpha, ancientLeaves, potentialExtant)
         SR2.outputReconstructedAdjacencies(reconstructedAdj, outputDirectory+"/reconstructed_adjacencies_" + str(i))
 
         for node in reconstructedAdj:
@@ -52,6 +51,15 @@ def runSample(params):
         undoubled = scaffolding.undoubleScaffolds(scaffolds)
         scaffolding.outputUndoubledScaffolds(undoubled, outputDirectory+"/undoubled_scaffolds_" + str(i))
         scaffolding.outputScaffolds(scaffolds, outputDirectory+"/doubled_scaffolds_" + str(i))
+
+        # scaffold extant genomes
+        scaffolds_extant = scaffolding.scaffoldAdjacencies(newExtant)
+        undoubled_extant = scaffolding.undoubleScaffolds(scaffolds_extant)
+        scaffolding.outputUndoubledScaffolds(undoubled_extant, outputDirectory + "/undoubled_scaffolds_extant_" + str(i))
+        scaffolding.outputScaffolds(scaffolds_extant, outputDirectory + "/doubled_scaffolds_extant_" + str(i))
+        #scaffolding.sanityCheckScaffolding(undoubled_extant)
+
+
         log=scaffolding.sanityCheckScaffolding(undoubled)
         outLog+=log
         for node in undoubled:

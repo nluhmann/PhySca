@@ -314,7 +314,7 @@ if args.sampling and __name__ == '__main__':
     results = pool.map_async(runSample.runSample, tasks)
     # close pool so no more tasks can be handed over to the workers
     pool.close()
-    # let main programm wait for every workerprocess
+    # let main program wait for every workerprocess
     pool.join()
     # receive the results
     output = results.get()
